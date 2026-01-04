@@ -182,30 +182,33 @@ This document provides a detailed breakdown of all tasks required to build the M
 
 ### Data Collection
 
-**TASK-020: Price Feed Client (CoinGecko)**
+**TASK-020: Price Feed Client (CoinGecko + Fallbacks)**
 - **Priority**: P0
 - **Dependencies**: TASK-007
-- **Effort**: 3 hours
+- **Effort**: 5 hours
 - **File**: `src/services/price_feed.py`
 - **Acceptance Criteria**:
-  - [ ] Fetch XRP current price
-  - [ ] Fetch XRP OHLCV (15m, 1h candles)
+  - [ ] Fetch XRP/BTC/ETH current price (CoinGecko primary)
+  - [ ] Fetch XRP/BTC/ETH OHLCV (15m, 1h candles)
   - [ ] Cache in Redis (15s TTL)
-  - [ ] Rate limiting (50 req/min)
+  - [ ] Fallback to CoinCap on primary failure/429
+  - [ ] Optional fallback to Coinpaprika if both fail
+  - [ ] Rate limiting per provider (documented)
   - [ ] Error handling
   - [ ] Tests (mocked + integration)
 
-**TASK-021: News Feed Client (CryptoPanic)**
+**TASK-021: News Feed Client (NewsAPI + Fallback)**
 - **Priority**: P0
 - **Dependencies**: TASK-007
-- **Effort**: 3 hours
+- **Effort**: 5 hours
 - **File**: `src/services/news.py`
 - **Acceptance Criteria**:
-  - [ ] Fetch XRP-related news
+  - [ ] Fetch XRP/BTC/ETH-related news (NewsAPI primary)
+  - [ ] Fallback to GNews on primary failure/429
   - [ ] Filter by recency (last 30 min)
   - [ ] Parse sentiment (positive/negative/neutral)
   - [ ] Cache in Redis (5min TTL)
-  - [ ] Rate limiting
+  - [ ] Rate limiting per provider (documented)
   - [ ] Error handling
   - [ ] Tests
 
@@ -266,6 +269,7 @@ This document provides a detailed breakdown of all tasks required to build the M
 - **Priority**: P0
 - **Dependencies**: TASK-027
 - **Effort**: 4 hours
+- **Skills**: Use `/backtest` skill to validate confidence thresholds
 - **Acceptance Criteria**:
   - [ ] Timeframe alignment score
   - [ ] News strength score
@@ -273,6 +277,8 @@ This document provides a detailed breakdown of all tasks required to build the M
   - [ ] Historical accuracy lookup
   - [ ] Weighted confidence calculation
   - [ ] Unit tests
+  - [ ] Backtest different confidence thresholds (70%, 75%, 80%, 85%) using `/backtest` skill
+  - [ ] Optimize threshold for best win rate vs trade frequency trade-off
 
 **TASK-029: Historical Win Rate Tracker**
 - **Priority**: P0
@@ -304,7 +310,7 @@ This document provides a detailed breakdown of all tasks required to build the M
   - [ ] Check recent win rate >65%
   - [ ] Position sizing logic
   - [ ] Unit tests (>90% coverage)
-  - [ ] Backtest showing >70% win rate
+  - [ ] Backtest showing >70% win rate (use `/backtest` skill)
 
 **TASK-036: Dynamic Exit Strategy**
 - **Priority**: P0
@@ -323,14 +329,32 @@ This document provides a detailed breakdown of all tasks required to build the M
 - **Dependencies**: TASK-035
 - **Effort**: 8 hours
 - **File**: `tests/backtest/backtest_runner.py`
+- **Skills**: Use `/backtest` skill to run comprehensive backtests
 - **Acceptance Criteria**:
   - [ ] Load historical price data (90 days)
   - [ ] Simulate strategy execution
   - [ ] Calculate win rate, profit factor, drawdown
   - [ ] Generate performance report
-  - [ ] Test at different capital levels
-  - [ ] Must show >70% win rate
+  - [ ] Test at different capital levels ($10, $50, $200, $1000)
+  - [ ] Must show >70% win rate (validated via `/backtest` skill)
   - [ ] Documentation
+- **How to Validate**: Run `/backtest` with current strategy parameters and verify all metrics meet targets
+
+**TASK-038: Strategy Parameter Optimization**
+- **Priority**: P1
+- **Dependencies**: TASK-037
+- **Effort**: 4 hours
+- **Skills**: Use `/backtest` skill for parameter sweep
+- **Acceptance Criteria**:
+  - [ ] Test confidence thresholds: 70%, 75%, 80%, 85%, 90%
+  - [ ] Test sentiment magnitude thresholds: 30, 40, 50
+  - [ ] Test minimum liquidity thresholds: $5k, $10k, $20k
+  - [ ] Use `/backtest` skill for each parameter combination
+  - [ ] Document win rate vs trade frequency trade-offs
+  - [ ] Identify optimal parameter set for >70% win rate
+  - [ ] Generate parameter optimization report
+  - [ ] Update strategy with optimal parameters
+- **How to Validate**: Final backtest with optimal parameters shows >70% win rate and acceptable trade frequency
 
 ---
 
@@ -376,13 +400,15 @@ This document provides a detailed breakdown of all tasks required to build the M
 - **Dependencies**: None
 - **Effort**: 5 hours
 - **File**: `src/lib/risk/capital_manager.py`
+- **Skills**: Use `/backtest` skill to validate capital tier performance
 - **Acceptance Criteria**:
   - [ ] Detect capital tier (micro/small/medium/large)
   - [ ] Calculate position size by tier
   - [ ] Confidence-weighted sizing
   - [ ] Min/max position limits
   - [ ] Unit tests for all tiers
-  - [ ] Tested with $10, $50, $200, $1000
+  - [ ] Tested with $10, $50, $200, $1000 (run `/backtest` for each tier)
+- **How to Validate**: Run backtests at each capital level and verify profitable at all tiers
 
 **TASK-046: Risk Manager (Validation)**
 - **Priority**: P0
@@ -630,6 +656,7 @@ This document provides a detailed breakdown of all tasks required to build the M
 - **Priority**: P0
 - **Dependencies**: TASK-080
 - **Effort**: 30 days (monitoring)
+- **Skills**: Compare results with `/backtest` predictions
 - **Acceptance Criteria**:
   - [ ] Run for 30 consecutive days
   - [ ] Achieve >70% win rate
@@ -637,6 +664,8 @@ This document provides a detailed breakdown of all tasks required to build the M
   - [ ] Maximum drawdown <25%
   - [ ] No unhandled exceptions
   - [ ] Performance report generated
+  - [ ] Results align with backtest predictions (run `/backtest` on same period for comparison)
+- **How to Validate**: Compare live paper trading metrics with backtest results to verify model accuracy
 
 ---
 
@@ -727,10 +756,18 @@ This document provides a detailed breakdown of all tasks required to build the M
 
 ## Summary Statistics
 
-**Total Tasks**: 75+
+**Total Tasks**: 76+
 **Critical Path Tasks (P0)**: 60
 **Estimated Total Effort**: 250-300 hours
 **Target Completion**: 8 weeks (1 person full-time)
+
+### Skills Integration
+
+**Backtest Skill** (`/backtest`):
+- **Primary Tasks**: TASK-037, TASK-038, TASK-081
+- **Supporting Tasks**: TASK-028, TASK-035, TASK-045
+- **Purpose**: Validate >70% win rate target across all strategies and capital tiers
+- **Usage**: Run backtests during strategy development, parameter optimization, and validation phases
 
 ---
 
@@ -755,18 +792,19 @@ Phase 2 (Intelligence)
     └─→ TASK-025 (Momentum)
     └─→ TASK-026 (News Sentiment)
          └─→ TASK-027 (Composite Sentiment)
-              └─→ TASK-028 (Confidence)
+              └─→ TASK-028 (Confidence - use /backtest for threshold optimization)
               └─→ TASK-029 (Historical Tracker)
-                   └─→ TASK-035 (Interval Strategy)
+                   └─→ TASK-035 (Interval Strategy - validate with /backtest)
                         └─→ TASK-036 (Exit Strategy)
-                        └─→ TASK-037 (Backtesting)
+                        └─→ TASK-037 (Backtesting - primary /backtest skill usage)
+                             └─→ TASK-038 (Parameter Optimization - use /backtest for sweep)
 
 Phase 3 (Execution & Risk)
   TASK-012, TASK-035
     └─→ TASK-040 (Executor)
          └─→ TASK-041 (Position Manager)
 
-  TASK-045 (Capital Manager)
+  TASK-045 (Capital Manager - validate tiers with /backtest)
     └─→ TASK-046 (Risk Manager)
          └─→ TASK-047, TASK-048, TASK-049
 
@@ -788,7 +826,7 @@ Phase 4 (Production)
 
   TASK-040
     └─→ TASK-080 (Paper Trading)
-         └─→ TASK-081 (30-day validation)
+         └─→ TASK-081 (30-day validation - compare with /backtest predictions)
 ```
 
 ---
@@ -798,11 +836,11 @@ Phase 4 (Production)
 Update this section as tasks are completed:
 
 **Phase 1 Progress**: 0/16 tasks (0%)
-**Phase 2 Progress**: 0/12 tasks (0%)
+**Phase 2 Progress**: 0/13 tasks (0%) - includes TASK-038 (Parameter Optimization)
 **Phase 3 Progress**: 0/12 tasks (0%)
 **Phase 4 Progress**: 0/15 tasks (0%)
 
-**Overall Progress**: 0/75 tasks (0%)
+**Overall Progress**: 0/76 tasks (0%)
 
 **Next 3 Tasks**:
 1. TASK-001: Project Structure Setup

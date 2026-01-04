@@ -33,17 +33,18 @@ This roadmap outlines the development phases for the XRP Polymarket Cash Bot, fr
 - [x] Git repository with CI/CD pipeline (GitHub Actions)
 - [x] Docker Compose for local development
 - [x] Environment configuration system
+- [ ] Local vs VPS environment guide (setup + costs)
 
 **Week 2: Polymarket Integration**
 - [ ] Polymarket CLOB API client (`src/services/polymarket.py`)
-- [ ] Market fetching and filtering (XRP markets only)
+- [ ] Market fetching and filtering (crypto 15m markets; XRP priority, BTC/ETH supported)
 - [ ] Orderbook streaming (WebSocket)
 - [ ] Order submission and tracking
 - [ ] Position management
 - [ ] API rate limiting and retry logic
 
 ### Success Criteria
-- Successfully fetch and cache XRP markets
+- Successfully fetch and cache crypto 15m markets (XRP/BTC/ETH)
 - Submit test orders to Polymarket sandbox
 - Database storing market snapshots
 - 100% unit test coverage on core libraries
@@ -331,6 +332,22 @@ This roadmap outlines the development phases for the XRP Polymarket Cash Bot, fr
 - Weeks 31-36: Kalshi integration
 - Weeks 37-42: Web dashboard
 - Weeks 43-48: Institutional features
+
+---
+
+## Version 3-4: UX/UI Expansion (Polyglobe-Inspired)
+
+**Goal**: Add a web UX/UI inspired by Polyglobe for market discovery and performance visualization.
+
+**Scope**:
+- Market explorer for crypto 15-minute markets
+- Visual clustering by asset, interval, and liquidity
+- Live performance dashboards
+- Strategy configuration UI (read-only in V3, editable in V4)
+
+**Timeline**:
+- V3 (Weeks 49-60): Read-only UI + market explorer
+- V4 (Weeks 61-72): Interactive controls + strategy tuning
 
 ---
 

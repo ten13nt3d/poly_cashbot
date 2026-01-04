@@ -9,13 +9,13 @@
 
 ## Project Overview
 
-Successfully initialized complete project documentation and structure for the **XRP Polymarket Cash Bot** - an autonomous trading system designed to achieve >70% win rate on XRP prediction markets with scalable capital from $10 to $1000+.
+Successfully initialized complete project documentation and structure for the **XRP Polymarket Cash Bot** - an autonomous trading system designed to achieve >70% win rate on Polymarket crypto 15-minute markets (XRP priority, BTC/ETH supported) with scalable capital from $10 to $1000+.
 
 ---
 
 ## Documentation Generated
 
-### Core Documents (6 files)
+### Core Documents (7 files)
 
 1. **[docs/prd.md](./docs/prd.md)** (22.7 KB)
    - Complete Product Requirements Document
@@ -49,7 +49,12 @@ Successfully initialized complete project documentation and structure for the **
    - Milestones and deliverables
    - Post-MVP expansion plans (v1.1, v1.2, v2.0)
 
-6. **[docs/TASKS.md](./docs/TASKS.md)** (21.6 KB)
+6. **[docs/environments.md](./docs/environments.md)** (New)
+   - Local vs VPS setup
+   - Cost expectations
+   - Deployment options and tradeoffs
+
+7. **[docs/TASKS.md](./docs/TASKS.md)** (21.6 KB)
    - 75+ detailed implementation tasks
    - Task dependencies and priorities
    - Acceptance criteria for each task
@@ -80,6 +85,7 @@ poly_cashbot/
 │   ├── technical-specification.md
 │   ├── mvp-definition.md
 │   ├── roadmap.md
+│   ├── environments.md
 │   └── TASKS.md
 │
 ├── memory/                        # Project constitution
@@ -118,7 +124,7 @@ poly_cashbot/
 ## Key Project Characteristics
 
 ### Primary Goal
-**Achieve >70% win rate** on XRP prediction markets with capital-agnostic design
+**Achieve >70% win rate** on Polymarket crypto 15-minute markets with capital-agnostic design
 
 ### Capital Scalability
 - **Micro Tier** ($10-$50): 10% per trade
@@ -127,7 +133,7 @@ poly_cashbot/
 - **Large Tier** ($1000+): 2% per trade
 
 ### Core Strategies
-1. **15-Minute Interval Trading**: Multi-timeframe sentiment analysis
+1. **15-Minute Interval Trading**: High-precision directional trading (XRP priority, BTC/ETH supported)
 2. **Whale Front-Running**: Detect and act on large orders (>10x avg)
 3. **High-Confidence Filtering**: Only trade signals >80% confidence
 
@@ -252,8 +258,8 @@ poly_cashbot/
 
 | Metric | Value |
 |--------|-------|
-| **Total Documentation** | 141.6 KB |
-| **Core Documents** | 6 files |
+| **Total Documentation** | 142 KB (approx) |
+| **Core Documents** | 7 files |
 | **Supporting Docs** | 2 files |
 | **Total Tasks Defined** | 75+ tasks |
 | **Estimated Effort** | 250-300 hours |
@@ -270,6 +276,7 @@ poly_cashbot/
 - [x] Technical specification detailed
 - [x] MVP scope clearly defined
 - [x] Roadmap with phases and milestones
+- [x] Environment guide (local vs VPS)
 - [x] Task breakdown with dependencies
 - [x] AI agent coordination guide
 - [x] README updated for XRP focus
@@ -332,6 +339,7 @@ poly_cashbot/
 - Tech Spec: `/docs/technical-specification.md`
 - MVP Definition: `/docs/mvp-definition.md`
 - Roadmap: `/docs/roadmap.md`
+- Environments: `/docs/environments.md`
 - Tasks: `/docs/TASKS.md`
 - AI Agent Guide: `/AGENTS.md`
 

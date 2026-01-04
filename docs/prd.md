@@ -10,14 +10,14 @@
 
 ## Executive Summary
 
-The XRP Polymarket Cash Bot is an autonomous trading system designed to achieve the highest win rate and accuracy in XRP sentiment prediction markets on Polymarket using 15-minute interval trading strategies. The bot combines real-time market data analysis, whale position detection, front-running capabilities, and automated market making to generate consistent profits from XRP-related prediction markets.
+The XRP Polymarket Cash Bot is an autonomous trading system designed to achieve the highest win rate and accuracy in Polymarket crypto 15-minute markets using high-precision directional trading. The bot prioritizes XRP but supports BTC and ETH markets, combining real-time market data analysis, whale position detection, and automated execution to generate consistent profits from short-interval prediction markets.
 
 ### Core Value Proposition
 
-- **Highest Accuracy**: Optimize for maximum win rate in 15-minute XRP sentiment predictions
+- **Highest Accuracy**: Optimize for maximum win rate in 15-minute crypto markets (XRP priority)
 - **Whale Front-Running**: Detect and act on large orders before execution
 - **Market Making**: Profit from bid-ask spreads through automated liquidity provision
-- **Real-Time Intelligence**: Process live Polymarket data and XRP market sentiment
+- **Real-Time Intelligence**: Process live Polymarket data and crypto market sentiment
 - **Autonomous Operation**: Fully automated trading with minimal human intervention
 
 ---
@@ -45,7 +45,7 @@ Manual trading of prediction markets faces:
 ### Our Solution
 
 An autonomous bot that:
-- Monitors Polymarket XRP markets in real-time (24/7)
+- Monitors Polymarket crypto 15-minute markets in real-time (24/7), with XRP priority
 - Analyzes sentiment using multiple data sources
 - Detects whale positions and front-runs them
 - Provides liquidity through automated market making
@@ -60,7 +60,7 @@ An autonomous bot that:
 
 **Profile**:
 - Technical background in trading or programming
-- Capital range: $5,000 - $50,000
+- Capital range: $10 - $1000+
 - Seeks automated, low-maintenance income streams
 - Comfortable with API integrations and risk management
 
@@ -101,11 +101,11 @@ An autonomous bot that:
 
 **Requirements**:
 - Connect to Polymarket CLOB (Central Limit Order Book) API
-- Stream real-time order book updates for XRP markets
+- Stream real-time order book updates for crypto 15-minute markets (XRP priority, BTC/ETH supported)
 - Fetch historical market data for backtesting
 - Handle WebSocket connections for live data feeds
 - Parse market events: trades, order placements, cancellations
-- Monitor multiple XRP-related markets simultaneously
+- Monitor multiple crypto markets simultaneously
 
 **Acceptance Criteria**:
 - API connection established within 5 seconds
@@ -116,21 +116,21 @@ An autonomous bot that:
 
 **Priority**: P0 (Must Have)
 
-### 2. XRP Sentiment Analysis Engine
+### 2. Crypto Sentiment Analysis Engine (XRP Priority)
 
-**Description**: Analyze real-time sentiment for XRP from multiple sources
+**Description**: Analyze real-time sentiment for crypto markets with XRP priority (BTC/ETH supported)
 
 **Requirements**:
-- Aggregate XRP price data from exchanges (Binance, Coinbase, Kraken)
-- Monitor XRP-related news from crypto news APIs
+- Aggregate XRP/BTC/ETH price data from exchanges (Binance, Coinbase, Kraken)
+- Monitor XRP/BTC/ETH-related news from crypto news APIs
 - Analyze social media sentiment (Twitter/X, Reddit)
 - Calculate technical indicators (RSI, MACD, Bollinger Bands)
 - Generate composite sentiment score (-100 to +100)
 - Update sentiment every 15 seconds
 
 **Data Sources**:
-- CoinGecko/CoinMarketCap APIs for price
-- NewsAPI / CryptoPanic for news
+- CoinGecko (primary), CoinCap (backup), Coinpaprika (optional) for price (XRP/BTC/ETH)
+- NewsAPI (primary), GNews (backup) for news
 - Twitter API / Reddit API for social sentiment
 - On-chain metrics (XRP Ledger data)
 
@@ -182,7 +182,7 @@ An autonomous bot that:
 
 ### 4. Automated Market Making (AMM)
 
-**Description**: Provide liquidity on both sides of XRP markets to capture spread
+**Description**: Provide liquidity on both sides of crypto 15-minute markets to capture spread
 
 **Requirements**:
 - Place simultaneous buy and sell orders
@@ -214,7 +214,7 @@ An autonomous bot that:
 
 ### 5. 15-Minute Interval Trading Strategy
 
-**Description**: Execute optimized trades based on 15-minute XRP sentiment windows
+**Description**: Execute optimized trades based on 15-minute crypto sentiment windows (XRP priority)
 
 **Requirements**:
 - Analyze sentiment trend over previous 15 minutes
@@ -340,7 +340,7 @@ ELSE:
 ### As a Solo Trader
 
 1. **Market Monitoring**
-   - As a trader, I want the bot to monitor all XRP markets on Polymarket 24/7, so I don't miss trading opportunities
+   - As a trader, I want the bot to monitor crypto 15-minute markets on Polymarket 24/7 (XRP priority), so I don't miss trading opportunities
 
 2. **Automated Execution**
    - As a trader, I want the bot to automatically execute trades based on my strategy, so I don't need to watch markets constantly
@@ -459,12 +459,12 @@ ELSE:
 1. **API Rate Limits**: Polymarket API has rate limits that must be respected
 2. **Gas Costs**: Polygon network gas fees affect profitability on small trades
 3. **Latency**: Physical distance to API servers introduces minimum latency
-4. **Market Liquidity**: Some XRP markets may have insufficient volume
+4. **Market Liquidity**: Some crypto 15-minute markets may have insufficient volume
 5. **Data Availability**: Some sentiment sources may have API costs or limits
 
 ### Business Constraints
 
-1. **Capital Requirements**: Minimum $5,000 for meaningful returns
+1. **Capital Requirements**: Designed for $10 to $1000+ starting capital
 2. **Regulatory Uncertainty**: Prediction markets legal status varies by jurisdiction
 3. **Market Access**: Requires Polymarket account and KYC (if applicable)
 4. **Competition**: Other algorithmic traders may reduce edge over time
@@ -472,7 +472,7 @@ ELSE:
 ### Assumptions
 
 1. Polymarket API will remain stable and accessible
-2. XRP markets will continue to have sufficient trading volume
+2. Crypto 15-minute markets will continue to have sufficient trading volume
 3. Whale detection signals provide actionable edge
 4. Historical patterns continue (markets don't fundamentally change)
 5. Sentiment analysis correlates with short-term price movement
@@ -484,10 +484,10 @@ ELSE:
 
 The following features are NOT included in the initial version:
 
-1. **Multi-Asset Trading**: Only XRP markets in scope (not BTC, ETH, etc.)
+1. **Multi-Asset Trading**: Broad crypto universe beyond XRP/BTC/ETH (MVP supports XRP/BTC/ETH only)
 2. **Multiple Platforms**: Only Polymarket (not Kalshi, Augur, etc.)
 3. **Machine Learning Models**: Rule-based strategy only (no ML/AI for MVP)
-4. **Custom UI/Dashboard**: Terminal output and Telegram only
+4. **Custom UI/Dashboard**: Terminal output and Telegram only (UX/UI planned for V3/V4)
 5. **Backtesting Infrastructure**: Limited to simple historical replay
 6. **Multi-Account Support**: Single trading account only
 7. **Advanced Order Types**: Market orders only (no limit, stop-limit, etc.)
@@ -505,8 +505,8 @@ These may be considered for future versions based on MVP success.
 
 1. **Polymarket CLOB API**: Core trading platform
 2. **Polygon RPC**: Blockchain data for whale detection
-3. **CoinGecko/CoinMarketCap**: XRP price data
-4. **NewsAPI/CryptoPanic**: News aggregation
+3. **CoinGecko/CoinCap/Coinpaprika**: Crypto price data (XRP/BTC/ETH)
+4. **NewsAPI/GNews**: News aggregation
 5. **Twitter API**: Social sentiment (optional)
 
 ### Technical Stack

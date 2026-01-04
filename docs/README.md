@@ -39,6 +39,11 @@ New to the project? Read these in order:
   - Data models and API specs
   - Security and performance requirements
 
+- **[environments.md](./environments.md)** - Environments
+  - Local vs VPS setup
+  - Cost expectations
+  - Deployment options and tradeoffs
+
 - **[TASKS.md](./TASKS.md)** - Implementation Tasks
   - 75+ detailed tasks
   - Dependencies and priorities
@@ -61,10 +66,11 @@ New to the project? Read these in order:
 | technical-specification.md | 36.6 KB | Technical architecture |
 | mvp-definition.md | 28.6 KB | MVP scope and success criteria |
 | roadmap.md | 12.4 KB | Development timeline |
+| environments.md | New | Local vs VPS guidance |
 | TASKS.md | 21.6 KB | Detailed task breakdown |
 | constitution.md | 19.1 KB | Project principles |
 
-**Total**: 141.6 KB of comprehensive documentation
+**Total**: 142 KB (approx) of comprehensive documentation
 
 ## Quick Links
 

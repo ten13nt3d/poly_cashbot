@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-The MVP delivers a **profitable, automated trading bot** for XRP prediction markets on Polymarket with **highest win rate accuracy** (>70% target). The bot is designed to be **capital-agnostic**, working effectively with any starting capital from **$10 to $1000+**.
+The MVP delivers a **profitable, automated trading bot** for Polymarket crypto 15-minute markets with **highest win rate accuracy** (>70% target). The bot prioritizes XRP but supports BTC and ETH, and is designed to be **capital-agnostic**, working effectively with any starting capital from **$10 to $1000+**.
 
 **MVP Goal**: Achieve **>70% win rate** and positive ROI over 30 days of paper trading across different capital sizes, then transition to live trading.
 
@@ -23,12 +23,12 @@ The MVP delivers a **profitable, automated trading bot** for XRP prediction mark
 
 1. **Polymarket API Integration**
    - Connect to CLOB API
-   - Fetch XRP-related markets
+   - Fetch crypto 15-minute markets (XRP priority, BTC/ETH supported)
    - Submit market orders
    - Track positions and P&L
    - Multi-size capital support ($10-$1000+)
 
-2. **High-Accuracy XRP Sentiment Analysis**
+2. **High-Accuracy Crypto Sentiment Analysis (XRP Priority)**
    - Real-time price momentum analysis
    - News sentiment with confidence scoring
    - Multi-timeframe analysis (15m, 1h, 4h)
@@ -82,8 +82,8 @@ The MVP delivers a **profitable, automated trading bot** for XRP prediction mark
 1. **Market Making Strategy** - Deferred to Phase 2
 2. **Machine Learning Models** - Rule-based high-accuracy system first
 3. **Social Sentiment (Twitter/Reddit)** - Price + news sufficient for MVP
-4. **Multi-Asset Trading** - XRP focus for highest win rate
-5. **Web Dashboard** - Telegram sufficient for MVP
+4. **Multi-Asset Trading** - Broad crypto universe (MVP supports XRP/BTC/ETH only)
+5. **Web Dashboard** - Telegram + CLI only for MVP (UX/UI planned for V3/V4)
 6. **Advanced Backtesting UI** - Command-line backtesting only
 7. **Multi-Account Support** - Single account
 8. **Custom Order Types** - Market orders only
@@ -800,7 +800,7 @@ Day 30: $1,450 capital (+45% ROI, 71% WR)
 ### Backtesting Requirements
 
 **Historical Win Rate Validation**:
-- 90 days of historical XRP market data
+- 90 days of historical crypto 15-minute market data (XRP/BTC/ETH)
 - Test at different capital levels ($10, $50, $200, $1000)
 - Must achieve >70% win rate in backtest
 - Profit factor >2.0

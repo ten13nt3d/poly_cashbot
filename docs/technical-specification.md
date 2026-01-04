@@ -27,13 +27,13 @@
 
 ### Purpose
 
-The XRP Polymarket Cash Bot is a real-time algorithmic trading system that executes automated trades on Polymarket's XRP prediction markets using sentiment analysis, whale detection, and market making strategies.
+The XRP Polymarket Cash Bot is a real-time algorithmic trading system that executes automated trades on Polymarket crypto 15-minute markets using sentiment analysis, whale detection, and high-precision directional strategies. XRP is the primary asset, with BTC and ETH supported.
 
 ### System Boundaries
 
 **In Scope**:
 - Polymarket API integration (CLOB)
-- XRP price and sentiment monitoring
+- Crypto price and sentiment monitoring (XRP/BTC/ETH)
 - Whale position detection
 - Automated trade execution
 - Risk management
@@ -41,8 +41,8 @@ The XRP Polymarket Cash Bot is a real-time algorithmic trading system that execu
 
 **Out of Scope**:
 - Other prediction market platforms (Kalshi, Augur)
-- Non-XRP cryptocurrency markets
-- Web UI (terminal + Telegram only)
+- Broader crypto universe beyond XRP/BTC/ETH (MVP supports XRP/BTC/ETH only)
+- Web UI (terminal + Telegram only for MVP; UX/UI planned for V3/V4)
 - Machine learning models (rule-based only for MVP)
 
 ### System Context Diagram
@@ -236,10 +236,17 @@ The XRP Polymarket Cash Bot is a real-time algorithmic trading system that execu
 **Price Feeds**
 - **Library**: `pycoingecko` for CoinGecko API
 - **Alternative**: Direct REST calls to multiple exchanges
+- **MVP Shortlist (Free/Freemium)**:
+  - **CoinGecko**: Primary price feed for XRP/BTC/ETH (no auth on free tier, rate-limited)
+  - **CoinCap**: Backup price feed (no auth, rate-limited)
+  - **Coinpaprika**: Optional third feed + market metadata (no auth, rate-limited)
 
 **News**
 - **Library**: `newsapi-python` (NewsAPI)
 - **Alternative**: `feedparser` for RSS feeds
+- **MVP Shortlist (Freemium)**:
+  - **NewsAPI**: Primary news feed with keyword filtering (apiKey, rate-limited)
+  - **GNews**: Backup news feed (apiKey, rate-limited)
 
 ### Development Tools
 
@@ -314,7 +321,8 @@ The XRP Polymarket Cash Bot is a real-time algorithmic trading system that execu
 
 **Components**:
 - `PolymarketClient`: CLOB API integration
-- `PriceFeedClient`: XRP price from exchanges
+- `MarketDiscoveryClient`: Fetch and filter crypto 15-minute markets (XRP/BTC/ETH)
+- `PriceFeedClient`: Crypto prices (XRP/BTC/ETH) from exchanges
 - `NewsClient`: Crypto news aggregation
 - `SocialClient`: Twitter/Reddit sentiment (optional)
 - `BlockchainClient`: Polygon RPC for whale tracking
@@ -580,6 +588,8 @@ GET /simple/price?ids=ripple&vs_currencies=usd
 
 # XRP OHLCV
 GET /coins/ripple/ohlc?vs_currency=usd&days=1
+
+# Use equivalent endpoints for bitcoin and ethereum ids for BTC/ETH markets.
 ```
 
 **Rate Limits**: 50 calls/minute (free tier)
@@ -1095,6 +1105,8 @@ class Config(BaseSettings):
 
 ### Development Environment
 
+See `docs/environments.md` for local vs VPS setup guidance and cost estimates.
+
 ```yaml
 # docker-compose.yml
 version: '3.8'
@@ -1265,7 +1277,10 @@ pg_dump cashbot > backup_$(date +%Y%m%d).sql
 |---------|-------|----------|
 | Polymarket | 100 req/min | Redis rate limiter, queue requests |
 | CoinGecko | 50 req/min | Cache aggressively (60s TTL) |
+| CoinCap | TBD (free tier, verify) | Cache aggressively, fallback on 429 |
+| Coinpaprika | TBD (free tier, verify) | Cache aggressively, use as optional backup |
 | NewsAPI | 100 req/hour | Batch fetch, long cache |
+| GNews | TBD (free tier, verify) | Batch fetch, long cache |
 | Polygon RPC | 10000 req/day | Use only for whale detection |
 
 ---
