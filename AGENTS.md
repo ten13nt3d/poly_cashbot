@@ -712,6 +712,58 @@ A: Add to `pyproject.toml`, run `poetry install`, commit lockfile.
 
 ---
 
+## Changelog Structure
+
+All changes to the project are tracked in the `/changelog/` directory using a classical date format.
+
+### Naming Convention
+
+Changelogs follow the format: `YYYY-MM-DD_day-XX_description.md`
+
+**Examples**:
+- `2026-01-04_day-01-04_foundation.md` - Days 1-4 foundation work
+- `2026-01-05_day-05_database-testing.md` - Day 5 database and testing setup
+
+### What Goes in Changelogs
+
+Each changelog file contains:
+- **Date and Sprint Context**: Which phase/sprint the work belongs to
+- **Overview**: High-level summary of what was accomplished
+- **Added**: New features, files, infrastructure, or capabilities
+- **Fixed**: Bug fixes and compatibility updates
+- **Testing Results**: Coverage reports, test counts, execution times
+- **Infrastructure**: Docker, database, and service status
+- **Technical Debt**: Known issues and future improvements
+- **Statistics**: Lines of code, files created, dependencies added
+- **Next Steps**: What's planned for the following session
+
+### When to Create Changelog Entries
+
+AI agents should create or update changelog entries when:
+1. Completing a full day's work (Day 1, Day 2, etc.)
+2. Finishing a sprint or phase milestone
+3. Making significant architectural changes
+4. Adding major features or infrastructure
+
+### Format
+
+Use markdown with clear sections. Follow the format from existing changelogs in `/changelog/`.
+
+### Relationship to Git Commits
+
+- **Changelogs**: Track daily/sprint progress with detailed context and metrics
+- **Git Commits**: Track individual code changes with concise messages
+- Commit messages should reference the changelog date when completing a day's work
+
+**Example**:
+```bash
+git commit -m "feat: complete Day 5 database and testing infrastructure
+
+See changelog/2026-01-05_day-05_database-testing.md for full details"
+```
+
+---
+
 ## Final Reminders for AI Agents
 
 1. **Read the Constitution**: It's the law. Follow it.
