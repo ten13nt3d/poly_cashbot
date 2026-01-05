@@ -95,7 +95,7 @@ class Position(Base, TimestampMixin):
         self.current_price = current_price
         price_diff = current_price - self.entry_price
 
-        if self.side == "buy":
+        if self.side.upper() == "BUY":
             self.unrealized_pnl = price_diff * self.size
         else:  # sell
             self.unrealized_pnl = -price_diff * self.size
