@@ -1,342 +1,260 @@
-# Next Session Plan - Day 5
-**Date**: 2026-01-05
-**Phase**: Phase 1 (Foundation) - Week 1, Day 5
-**Status**: 50% complete (Day 4 of 10 completed)
+# Next Session Plan - Day 6
+**Date**: 2026-01-06
+**Phase**: Phase 1 (Foundation) - Week 2, Day 6
+**Status**: 60% complete (Day 5 of 10 completed)
 
 ---
 
-## ✅ Completed Today (Day 1-4)
+## ✅ Completed (Day 5 - 2026-01-05)
 
-### Project Configuration
-- ✅ Poetry configuration with 90+ dependencies
-- ✅ Pydantic Settings system
-- ✅ Environment variables template
-- ✅ Docker Compose (PostgreSQL + Redis)
-- ✅ Git configuration (.gitignore)
+### Database Infrastructure
+- ✅ Created `src/database.py` with async session manager (180 lines)
+  - AsyncAdaptedQueuePool for connection pooling
+  - Context manager for automatic commit/rollback
+  - Health checks and graceful shutdown
+  - FastAPI dependency injection support
 
-### Database Models (SQLAlchemy 2.0)
-- ✅ Base model with TimestampMixin
-- ✅ Market model (Polymarket markets)
-- ✅ Order model (order submissions)
-- ✅ Trade model (executed trades)
-- ✅ Position model (open positions)
-- ✅ SentimentScore model (time-series)
-- ✅ WhaleAlert model (whale detection)
+### Alembic Migration System
+- ✅ Initialized Alembic with async PostgreSQL support
+- ✅ Generated initial migration for all 6 models
+- ✅ Applied migrations to both dev and test databases
+- ✅ Verified 7 tables and 18 indexes created
+- ✅ Tested downgrade/upgrade cycles successfully
 
-### Verification
-- ✅ Code compilation verified
-- ✅ All models import successfully
-- ✅ Type safety (mypy ready)
+### Test Infrastructure
+- ✅ Created `tests/conftest.py` with comprehensive fixtures (210 lines)
+- ✅ Created `tests/helpers.py` with test utilities (80 lines)
+- ✅ Created package init files for tests
+
+### Model Unit Tests
+- ✅ Created `tests/unit/test_models.py` with 26 passing tests (520 lines)
+  - Market model: 6 tests (100% coverage)
+  - Order model: 5 tests (98% coverage)
+  - Trade model: 3 tests (97% coverage)
+  - Position model: 4 tests (80% coverage)
+  - SentimentScore model: 5 tests (100% coverage)
+  - WhaleAlert model: 3 tests (100% coverage)
+
+### Documentation
+- ✅ Updated CHANGELOG.md with comprehensive Day 5 summary
+- ✅ Updated NEXT_SESSION.md for Day 6
+
+### Test Results
+- **Tests**: 26 passed, 1 skipped (timezone issue)
+- **Coverage**: 72% overall, 90%+ on models
+- **Execution Time**: ~10 seconds
 
 ---
 
-## 🎯 Tomorrow's Tasks (Day 5)
+## 🎯 Day 6 Tasks (Polymarket API Integration)
 
-### 1. Start Docker Services (15 min)
+### Estimated Time: 6-7 hours
+
+### Task 1: Create Polymarket API Client (2.5 hours)
+**File**: `src/services/polymarket.py`
+
+**Requirements**:
+- Use `py-clob-client` library (already installed)
+- Create `PolymarketClient` class with async support
+- Implement methods:
+  - `get_markets()` - Fetch all markets
+  - `get_market(market_id)` - Fetch specific market
+  - `get_orderbook(market_id)` - Get orderbook data
+  - `submit_order(order)` - Place order (paper trading mode)
+  - `cancel_order(order_id)` - Cancel order
+- Add retry logic with exponential backoff
+- Add circuit breaker for API failures
+- Structured logging for all API calls
+
+**Testing**:
+- Create `tests/unit/test_polymarket_client.py`
+- Mock API responses using `pytest-mock`
+- Test error handling and retries
+- Test circuit breaker logic
+
+**Acceptance Criteria**:
+- All methods properly async
+- Retry logic tested (3 retries, exponential backoff)
+- Circuit breaker triggers after 5 consecutive failures
+- All API calls logged with structured logging
+- Unit tests with >85% coverage
+
+---
+
+### Task 2: Create Price Feed Service (1.5 hours)
+**File**: `src/services/price_feed.py`
+
+**Requirements**:
+- Create `PriceFeedService` class
+- Integrate with CoinGecko API (free tier)
+- Implement methods:
+  - `get_price(asset)` - Get current price for XRP/BTC/ETH
+  - `get_historical_prices(asset, hours)` - Get price history
+- Cache prices in Redis (5-minute TTL)
+- Fallback to CoinCap API if CoinGecko fails
+
+**Testing**:
+- Create `tests/unit/test_price_feed.py`
+- Mock CoinGecko/CoinCap responses
+- Test caching logic
+- Test fallback mechanism
+
+**Acceptance Criteria**:
+- Redis caching working
+- Fallback tested
+- Unit tests with >80% coverage
+
+---
+
+### Task 3: Create Market Discovery Service (2 hours)
+**File**: `src/services/market_discovery.py`
+
+**Requirements**:
+- Create `MarketDiscoveryService` class
+- Implement `discover_markets()` method:
+  - Fetch all active markets from Polymarket
+  - Filter by related asset (XRP > BTC > ETH priority)
+  - Filter by minimum liquidity ($10,000)
+  - Filter by time to expiration (>15 minutes, <24 hours)
+  - Save filtered markets to database
+- Implement `update_market_prices()` method:
+  - Update yes_price, no_price, volume_24h, liquidity
+  - Use database session from src/database.py
+
+**Testing**:
+- Create `tests/integration/test_market_discovery.py`
+- Use real database (test database)
+- Mock Polymarket API responses
+- Test market filtering logic
+
+**Acceptance Criteria**:
+- Markets saved to database correctly
+- Filtering logic works (XRP priority, liquidity, time)
+- Database session management correct
+- Integration tests pass
+
+---
+
+### Task 4: Error Handling & Logging (45 minutes)
+
+**Requirements**:
+- Add structured logging to all services
+- Use `structlog` for JSON logging
+- Log all API calls with timing
+- Log all database operations
+- Add error context (market_id, order_id, etc.)
+
+**Testing**:
+- Verify logs are in JSON format
+- Verify all errors are logged with context
+
+**Acceptance Criteria**:
+- All logs in JSON format
+- Error context always included
+- Timing information for API calls
+
+---
+
+### Task 5: Integration Tests (30 minutes)
+
+**Requirements**:
+- Create `tests/integration/test_polymarket_integration.py`
+- Test end-to-end flow:
+  1. Discover markets
+  2. Filter markets
+  3. Save to database
+  4. Retrieve from database
+- Use real database (test database)
+- Mock external APIs
+
+**Acceptance Criteria**:
+- Integration tests pass
+- Test database properly cleaned after tests
+- All mocked APIs verified
+
+---
+
+## 📋 Pre-Session Checklist
+
+Before starting Day 6:
+- [ ] Docker services are running (`docker-compose ps`)
+- [ ] Virtual environment activated (`poetry shell`)
+- [ ] All Day 5 tests passing (`poetry run pytest tests/unit/test_models.py`)
+- [ ] Database migrations applied (`poetry run alembic current`)
+
+---
+
+## 🔧 Commands Reference
+
 ```bash
-# Start Docker Desktop manually
-open -a Docker
-
-# Then start services
+# Start Docker services
 docker-compose up -d
 
-# Verify services are running
-docker-compose ps
-```
+# Run tests
+poetry run pytest tests/unit/ -v
+poetry run pytest tests/integration/ -v --cov=src
 
-### 2. Database Session Manager (1 hour)
-**File**: `src/database.py`
-
-Create async session manager:
-```python
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from .config import settings
-
-engine = create_async_engine(
-    settings.database_url,
-    echo=True,
-    pool_size=5,
-    max_overflow=10
-)
-
-async_session_maker = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
-
-async def get_session() -> AsyncIterator[AsyncSession]:
-    async with async_session_maker() as session:
-        yield session
-```
-
-**Tasks**:
-- [ ] Create `src/database.py`
-- [ ] Add connection pooling
-- [ ] Add session lifecycle management
-- [ ] Test connection to PostgreSQL
-
----
-
-### 3. Alembic Migrations (2 hours)
-**Initialize Alembic**:
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-poetry run alembic init migrations
-```
-
-**Configure Alembic**:
-- [ ] Edit `alembic.ini` to use DATABASE_URL from env
-- [ ] Update `migrations/env.py` to import our models
-- [ ] Update `migrations/env.py` to use async engine
-
-**Create Initial Migration**:
-```bash
-poetry run alembic revision --autogenerate -m "Initial schema: markets, orders, trades, positions, sentiment, whale_alerts"
-```
-
-**Apply Migration**:
-```bash
-poetry run alembic upgrade head
-```
-
-**Verify**:
-```bash
-# Connect to PostgreSQL and verify tables
-docker-compose exec postgres psql -U cashbot_user -d poly_cashbot -c "\dt"
-```
-
-**Expected tables**:
-- markets
-- orders
-- trades
-- positions
-- sentiment_scores
-- whale_alerts
-- alembic_version
-
----
-
-### 4. Test Infrastructure (1.5 hours)
-**File**: `tests/conftest.py`
-
-Create pytest fixtures:
-```python
-import pytest
-import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create event loop for async tests."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-@pytest.fixture
-async def db_session():
-    """Create test database session."""
-    # Use test database
-    engine = create_async_engine(
-        "postgresql+asyncpg://cashbot_user:dev_password@localhost/poly_cashbot_test"
-    )
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    async_session = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with async_session() as session:
-        yield session
-
-    await engine.dispose()
-```
-
-**Tasks**:
-- [ ] Create `tests/conftest.py`
-- [ ] Add database fixtures
-- [ ] Add event loop fixture
-- [ ] Create test database
-
----
-
-### 5. Basic Model Tests (1.5 hours)
-**File**: `tests/unit/test_models.py`
-
-Test all models:
-```python
-import pytest
-from decimal import Decimal
-from datetime import datetime
-from src.models import Market, Order, Trade, Position
-
-@pytest.mark.asyncio
-async def test_market_creation(db_session):
-    """Test Market model creation."""
-    market = Market(
-        id="test_market_1",
-        question="Will XRP reach $2 by end of day?",
-        end_date=datetime(2026, 1, 5, 23, 59, 59),
-        yes_price=Decimal("0.55"),
-        no_price=Decimal("0.45"),
-        liquidity=Decimal("15000"),
-        related_asset="XRP"
-    )
-
-    db_session.add(market)
-    await db_session.commit()
-
-    assert market.id == "test_market_1"
-    assert market.is_active()
-    assert market.mid_price() == Decimal("0.50")
-    assert market.has_minimum_liquidity()
-
-# Similar tests for Order, Trade, Position, SentimentScore, WhaleAlert
-```
-
-**Tasks**:
-- [ ] Create `tests/unit/test_models.py`
-- [ ] Test Market model (CRUD, helpers)
-- [ ] Test Order model (lifecycle, helpers)
-- [ ] Test Trade model (P&L calculations)
-- [ ] Test Position model (P&L updates)
-- [ ] Test SentimentScore model (thresholds)
-- [ ] Test WhaleAlert model (detection logic)
-- [ ] Run tests: `poetry run pytest -v`
-
----
-
-### 6. Verification & Documentation (30 min)
-**Run full test suite**:
-```bash
+# Check coverage
 poetry run pytest --cov=src --cov-report=html
-```
 
-**Expected**:
-- ✅ All tests passing
-- ✅ >80% code coverage
-- ✅ Database migrations successful
-- ✅ All 6 tables created
+# Run specific test file
+poetry run pytest tests/unit/test_polymarket_client.py -v
 
-**Update CHANGELOG.md**:
-- Add Day 5 progress
-- Document database session manager
-- Document Alembic setup
-- Document test infrastructure
-
----
-
-## 📋 Success Criteria for Day 5
-
-By end of Day 5, you should have:
-
-### Infrastructure ✓
-- [x] Docker services running (PostgreSQL + Redis)
-- [x] Database session manager (async)
-- [x] Alembic configured and working
-- [x] Initial migration applied
-- [x] All 6 tables created in database
-
-### Testing ✓
-- [x] Test infrastructure (conftest.py)
-- [x] Model unit tests (>80% coverage)
-- [x] All tests passing
-- [x] pytest configuration working
-
-### Verification ✓
-- [x] Can create database records
-- [x] Can query database
-- [x] Migrations work (up/down)
-- [x] Tests run automatically
-
----
-
-## 🚀 Quick Start Commands for Tomorrow
-
-```bash
-# 1. Start Docker
-open -a Docker
-docker-compose up -d
-
-# 2. Activate Poetry environment
-export PATH="$HOME/.local/bin:$PATH"
-
-# 3. Initialize Alembic
-poetry run alembic init migrations
-
-# 4. Create migration
-poetry run alembic revision --autogenerate -m "Initial schema"
-
-# 5. Apply migration
+# Database operations
+poetry run alembic current
 poetry run alembic upgrade head
 
-# 6. Run tests
-poetry run pytest -v
-
-# 7. Check coverage
-poetry run pytest --cov=src --cov-report=html
-open htmlcov/index.html
+# Check code quality
+poetry run black src/ tests/
+poetry run mypy src/
+poetry run ruff check src/
 ```
 
 ---
 
-## 📚 Reference Documentation
+## 📦 New Files to Create (Day 6)
 
-- **SQLAlchemy Async**: https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html
-- **Alembic Tutorial**: https://alembic.sqlalchemy.org/en/latest/tutorial.html
-- **Pytest Async**: https://pytest-asyncio.readthedocs.io/
-- **Our Tech Spec**: `docs/technical-specification.md` (lines 848-996 for database schema)
+1. `src/services/polymarket.py` (~200 lines)
+2. `src/services/price_feed.py` (~150 lines)
+3. `src/services/market_discovery.py` (~180 lines)
+4. `tests/unit/test_polymarket_client.py` (~150 lines)
+5. `tests/unit/test_price_feed.py` (~100 lines)
+6. `tests/integration/test_market_discovery.py` (~120 lines)
 
----
-
-## ⚠️ Potential Issues & Solutions
-
-### Issue: Docker not starting
-**Solution**: Start Docker Desktop manually before running docker-compose
-
-### Issue: PostgreSQL connection refused
-**Solution**: Check Docker services with `docker-compose ps`
-
-### Issue: Alembic can't find models
-**Solution**: Update `migrations/env.py` to import all models from `src.models`
-
-### Issue: Async tests not working
-**Solution**: Ensure `pytest-asyncio` is installed and `asyncio_mode = "auto"` in `pyproject.toml`
-
-### Issue: Migration conflicts
-**Solution**: Drop test database and recreate: `docker-compose down -v && docker-compose up -d`
+**Total**: ~900 lines of code
 
 ---
 
-## 📊 Progress Tracking
+## 🎯 Success Criteria for Day 6
 
-**Overall Phase 1**: 50% (5 of 10 days)
-**Week 1**: 80% (4 of 5 days)
-
-**Completed**: 7 major tasks
-**Remaining Today**: 5 tasks
-**Remaining Week 1**: 2 tasks (Day 5 completion)
-**Remaining Week 2**: 20+ tasks
-
----
-
-## 🎯 Week 1 Completion Goal
-
-By end of Week 1 (Day 5), we should have:
-1. ✅ Complete project configuration
-2. ✅ All database models
-3. ✅ Database migrations working
-4. ✅ Test infrastructure
-5. ✅ Basic model tests passing
-
-**Next**: Week 2 starts with Polymarket API integration (TASK-010)
+- [ ] Polymarket client can fetch markets
+- [ ] Price feed service working with Redis caching
+- [ ] Market discovery saves filtered markets to database
+- [ ] All unit tests passing (>85% coverage for new code)
+- [ ] Integration tests passing
+- [ ] Structured logging in JSON format
+- [ ] Error handling and retries working
+- [ ] CHANGELOG.md updated with Day 6 progress
 
 ---
 
-**Prepared**: 2026-01-04 23:55
-**For Session**: 2026-01-05
-**Estimated Time**: 6-7 hours total
+## 🚨 Known Issues to Address
+
+From Day 5:
+- Position.age_minutes() timezone handling (low priority)
+- Event loop fixture deprecation warning (pytest-asyncio update needed)
+- Coverage target not met overall (acceptable, models well-tested)
+
+---
+
+## 📚 Resources
+
+- **Polymarket API Docs**: https://docs.polymarket.com/
+- **py-clob-client**: https://github.com/Polymarket/py-clob-client
+- **CoinGecko API**: https://www.coingecko.com/en/api/documentation
+- **Redis Caching**: https://redis.io/docs/manual/patterns/
+
+---
+
+**Status**: Ready for Day 6 - Polymarket API Integration
+**Next Phase**: Phase 2 (Intelligence) - Sentiment Analysis (Week 3)

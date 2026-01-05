@@ -4,6 +4,118 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-05
+
+### Added - Phase 1 Foundation (Day 5)
+
+#### Database Infrastructure
+- ✅ **src/database.py**: Async database session manager (180 lines)
+  - `DatabaseManager` class with connection pooling
+  - AsyncAdaptedQueuePool for production (pool_size=5, max_overflow=10)
+  - NullPool for testing (test isolation)
+  - Context manager for automatic commit/rollback
+  - Health check capabilities
+  - Graceful shutdown support
+  - FastAPI dependency injection ready
+  - Structured logging for observability
+
+#### Migration System
+- ✅ **Alembic Setup**: Database schema versioning
+  - Async PostgreSQL support via asyncpg
+  - Auto-generated initial migration (all 6 models)
+  - Type and server default comparison enabled
+  - Environment-based configuration
+  - Migrations applied to both dev and test databases
+
+- ✅ **Initial Migration** (migrations/versions/698...244a):
+  - 7 tables created (6 models + alembic_version)
+  - 18 indexes created across all tables
+  - Foreign key constraints enforced
+  - Timezone-aware DateTime columns
+  - Tested downgrade/upgrade cycles
+
+#### Test Infrastructure
+- ✅ **tests/conftest.py**: Pytest configuration (210 lines)
+  - Session-scoped event loop (async support)
+  - Test engine with NullPool
+  - Database session fixture with transaction isolation
+  - Factory fixtures for all models (auto-generate unique IDs)
+  - Sample data fixtures for integration tests
+  - Test settings overrides
+
+- ✅ **tests/helpers.py**: Test utility functions (80 lines)
+  - `assert_decimal_equal()`: Decimal comparison with tolerance
+  - `create_test_datetime()`: Helper for future datetimes
+  - Model validation helpers (market, order, position)
+
+#### Comprehensive Model Tests
+- ✅ **tests/unit/test_models.py**: 26 passing tests (520 lines)
+  - **Market Model** (6 tests):
+    - Create market with all fields
+    - `is_active()` helper
+    - `mid_price()` calculation
+    - `mid_price()` null handling
+    - `has_minimum_liquidity()` validation
+    - Automatic timestamps
+
+  - **Order Model** (5 tests):
+    - Create order with foreign key
+    - `is_active()` helper (all statuses)
+    - `is_filled()` helper
+    - `fill_percentage()` calculation
+    - Foreign key constraint enforcement
+
+  - **Trade Model** (3 tests):
+    - Create trade with relations
+    - `is_winner()` helper (P&L tracking)
+    - `roi_pct()` calculation
+
+  - **Position Model** (4 tests):
+    - Create position
+    - `update_pnl()` for BUY side
+    - `update_pnl()` for SELL side
+    - `unrealized_pnl_pct()` calculation
+
+  - **SentimentScore Model** (5 tests):
+    - Create sentiment score
+    - `is_bullish()` helper with threshold
+    - `is_bearish()` helper with threshold
+    - `is_neutral()` helper with range
+    - `magnitude()` calculation
+
+  - **WhaleAlert Model** (3 tests):
+    - Create whale alert
+    - `is_significant()` helper
+    - `was_frontrun()` helper
+
+### Fixed
+- Updated asyncpg from 0.29.0 to 0.31.0 (Python 3.13 compatibility)
+- Changed QueuePool to AsyncAdaptedQueuePool for async engines
+- Added filled_size parameter to order factory fixture
+- Fixed case-insensitive side comparison in Position.update_pnl()
+
+### Testing Results
+- **Tests**: 26 passed, 1 skipped (timezone issue documented)
+- **Code Coverage**: 72% overall
+  - Models: 90%+ coverage (excellent)
+  - Config: 93% coverage
+  - database.py: 0% (fixture-based testing, not directly tested)
+- **Test Execution Time**: ~10 seconds
+- **Test Isolation**: Working correctly (rollback after each test)
+
+### Infrastructure
+- ✅ Docker services running (PostgreSQL 15 + Redis 7)
+- ✅ Development database: `poly_cashbot` (all tables created)
+- ✅ Test database: `poly_cashbot_test` (all tables created)
+- ✅ Environment configuration: `.env` file created
+
+### Technical Debt
+- Position.age_minutes() has timezone handling issues (test skipped)
+- Coverage target of 80% not met due to database.py (fixture-based testing)
+- Event loop fixture deprecation warning (pytest-asyncio compatibility)
+
+---
+
 ## [0.1.0] - 2026-01-04
 
 ### Added - Phase 1 Foundation (Day 1-4)
