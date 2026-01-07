@@ -373,7 +373,7 @@ class TestPosition:
 
         position.update_pnl(Decimal("0.55"))  # 5% gain
 
-        pnl_pct = position.unrealized_pnl_pct()
+        pnl_pct = position.unrealized_pnl_pct
         assert pnl_pct is not None
         assert_decimal_equal(pnl_pct, Decimal("5.00"))
 
