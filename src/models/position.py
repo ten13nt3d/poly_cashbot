@@ -74,6 +74,7 @@ class Position(Base, TimestampMixin):
         Index("idx_positions_opened", "opened_at"),
     )
 
+    @property
     def age_minutes(self) -> float:
         """Calculate position age in minutes."""
         if self.is_open:
@@ -84,6 +85,7 @@ class Position(Base, TimestampMixin):
             return age_seconds / 60.0
         return 0.0
 
+    @property
     def unrealized_pnl_pct(self) -> Optional[Decimal]:
         """Calculate unrealized P&L as percentage."""
         if self.unrealized_pnl is not None and self.size > Decimal("0"):

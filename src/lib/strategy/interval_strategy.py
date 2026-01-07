@@ -27,6 +27,12 @@ class Position:
     unrealized_pnl: Decimal = Decimal("0")
     status: str = "open"  # "open", "closed", "stopped"
 
+    @property
+    def age_minutes(self) -> float:
+        """Calculate position age in minutes."""
+        age_seconds = (datetime.now() - self.opened_at).total_seconds()
+        return age_seconds / 60.0
+
 
 @dataclass
 class ExitStrategy:
@@ -258,9 +264,10 @@ class IntervalStrategy:
                 target_hold = self.DEFAULT_HOLD_MINUTES
             else:
                 target_hold = self.MAX_HOLD_MINUTES
-            
+
             return ExitStrategy(
                 type="HOLD",
+                reason=f"Trend still favorable, holding until {target_hold} minutes",
                 hold_until=position.opened_at + timedelta(minutes=target_hold)
             )
 
@@ -288,7 +295,10 @@ class IntervalStrategy:
             )
 
         # 6. Default: hold
-        return ExitStrategy(type="HOLD")
+        return ExitStrategy(
+            type="HOLD",
+            reason="Position within parameters, continuing to hold"
+        )
 
     @property
     def age_minutes(self) -> float:

@@ -288,7 +288,6 @@ class TestCalculateExitStrategy:
             entry_confidence=0.90,
             opened_at=datetime.now() - timedelta(minutes=10)
         )
-        pos.age_minutes = 10.0  # Add property for testing
         return pos
 
     def test_exit_take_profit(self, strategy, buy_position):
@@ -329,13 +328,10 @@ class TestCalculateExitStrategy:
             opened_at=datetime.now() - timedelta(minutes=16)
         )
 
-        # Add age_minutes property for testing
-        old_position.age_minutes = 16.0
-
         exit_strategy = strategy.calculate_exit_strategy(
             position=old_position,
             current_price=Decimal("0.52"),
-            current_sentiment=60.0,
+            current_sentiment=20.0,  # Weak sentiment (not favorable for BUY, needs > 20)
             market_volatility=0.10
         )
 
@@ -343,11 +339,11 @@ class TestCalculateExitStrategy:
 
     def test_exit_stop_loss(self, strategy, buy_position):
         """Test stop loss exit."""
-        # Price dropped significantly
+        # Price dropped significantly, sentiment turned bearish
         exit_strategy = strategy.calculate_exit_strategy(
             position=buy_position,
-            current_price=Decimal("0.45"),  # -10% loss
-            current_sentiment=60.0,
+            current_price=Decimal("0.43"),  # -14% loss (exceeds 13% stop loss)
+            current_sentiment=15.0,  # Weak sentiment (not favorable for BUY, <= 20)
             market_volatility=0.10
         )
 
@@ -385,8 +381,6 @@ class TestClosePosition:
             sentiment_score=60.0,
             confidence=0.90
         )
-        # Add age_minutes property
-        pos.age_minutes = (datetime.now() - pos.opened_at).total_seconds() / 60.0
         return pos
 
     def test_close_position_profit(self, strategy, open_position):

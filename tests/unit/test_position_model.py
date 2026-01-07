@@ -177,7 +177,7 @@ class TestPositionModel:
 
         position.unrealized_pnl = Decimal("10.00")
 
-        pnl_pct = position.unrealized_pnl_pct()
+        pnl_pct = position.unrealized_pnl_pct
         assert pnl_pct == Decimal("10.00")  # 10 / 100 * 100
 
     def test_unrealized_pnl_pct_loss(self):
@@ -195,7 +195,7 @@ class TestPositionModel:
 
         position.unrealized_pnl = Decimal("-20.00")
 
-        pnl_pct = position.unrealized_pnl_pct()
+        pnl_pct = position.unrealized_pnl_pct
         assert pnl_pct == Decimal("-20.00")  # -20 / 100 * 100
 
     def test_unrealized_pnl_pct_none(self):
@@ -212,7 +212,7 @@ class TestPositionModel:
         )
 
         # unrealized_pnl is None by default
-        pnl_pct = position.unrealized_pnl_pct()
+        pnl_pct = position.unrealized_pnl_pct
         assert pnl_pct is None
 
     def test_unrealized_pnl_pct_zero_size(self):
@@ -230,7 +230,7 @@ class TestPositionModel:
 
         position.unrealized_pnl = Decimal("10.00")
 
-        pnl_pct = position.unrealized_pnl_pct()
+        pnl_pct = position.unrealized_pnl_pct
         assert pnl_pct is None  # Should return None to avoid division by zero
 
     def test_age_minutes_open_position(self):
@@ -248,7 +248,7 @@ class TestPositionModel:
             strategy="test",
         )
 
-        age = position.age_minutes()
+        age = position.age_minutes
         # Should be approximately 30 minutes (allow small tolerance)
         assert 29.9 < age < 30.1
 
@@ -270,7 +270,7 @@ class TestPositionModel:
             strategy="test",
         )
 
-        age = position.age_minutes()
+        age = position.age_minutes
         # Should be approximately 15 minutes
         assert 14.9 < age < 15.1
 
@@ -287,7 +287,7 @@ class TestPositionModel:
             strategy="test",
         )
 
-        age = position.age_minutes()
+        age = position.age_minutes
         assert age == 0.0  # Should return 0 if closed_at is None
 
     def test_position_state_open(self, open_position):
