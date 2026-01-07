@@ -1,9 +1,39 @@
 # AI Agent Coordination Guide
 # XRP Polymarket Cash Bot
 
-**Version**: 1.0.0
-**Date**: 2026-01-04
+**Version**: 2.0.0
+**Date**: 2026-01-07
 **Purpose**: Guide AI coding agents (Claude, GPT, etc.) working on this project
+**Framework**: RBI (Research → Backtest → Implement)
+
+---
+
+## 🏆 GOLDEN RULE: RBI Framework
+
+**RBI (Research → Backtest → Implement) is MANDATORY for ALL trading development.**
+
+This is the golden rule for quant/algo traders. Every trading feature MUST go through:
+
+```
+RESEARCH → BACKTEST → IMPLEMENT
+    ↓          ↓          ↓
+Understand  Validate   Build
+Problem     Strategy   System
+```
+
+**Never skip a phase. Ever.**
+
+See `CLAUDE.md` and `RBI_STATUS.md` for complete RBI documentation.
+
+### Quick RBI Check
+
+Before working on ANY trading feature, ask:
+
+1. **Research**: Do we understand the market opportunity? → See `/docs/research/`
+2. **Backtest**: Has this been validated with historical data? → See `/tests/backtest/`
+3. **Implement**: Only after passing above two phases → See `/src/lib/`
+
+**Non-trading features** (logging, infrastructure, bug fixes) can skip RBI.
 
 ---
 
@@ -14,7 +44,7 @@
 **Capital**: Scalable from $10 to $1000+
 **Tech Stack**: Python 3.11+, PostgreSQL, Redis, Polymarket API
 
-**Core Principles**: Library-first, TDD, API-first, Fail-safe, High observability
+**Core Principles**: RBI framework, Library-first, TDD, API-first, Fail-safe, High observability
 
 ---
 
@@ -30,13 +60,15 @@
 
 ### Golden Rules for AI Agents
 
-1. **Library-First**: All logic goes in `src/lib/`, not in services or bot
-2. **Test-First**: Write tests BEFORE implementation
-3. **Type Hints**: Every function must have type hints
-4. **Docstrings**: Google-style docstrings on all public functions
-5. **No Secrets**: Never hardcode API keys or credentials
-6. **Error Handling**: Never use bare `except:`, always specific exceptions
-7. **Win Rate Focus**: Every decision should optimize for >70% win rate
+1. **RBI Framework**: ALL trading features must go through Research → Backtest → Implement
+2. **Library-First**: All logic goes in `src/lib/`, not in services or bot
+3. **Test-First**: Write tests BEFORE implementation (TDD)
+4. **Backtest-Validated**: No trading strategy goes to production without >70% backtested win rate
+5. **Type Hints**: Every function must have type hints
+6. **Docstrings**: Google-style docstrings on all public functions (include RBI metadata for trading features)
+7. **No Secrets**: Never hardcode API keys or credentials
+8. **Error Handling**: Never use bare `except:`, always specific exceptions
+9. **Win Rate Focus**: Every decision should optimize for >70% win rate
 
 ---
 
