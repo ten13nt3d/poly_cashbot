@@ -11,10 +11,17 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Dict, Any, Optional
 
-from src.lib.sentiment.analyzer import HighAccuracySentimentAnalyzer
+from src.lib.sentiment.analyzer import TemporalArbitrageDetector, TemporalArbitrageOpportunity
 from src.lib.whale.detector import WhaleDetector, OrderbookSnapshot
 from src.lib.strategy.interval_strategy import IntervalStrategy, Position, ExitStrategy
 from src.lib.risk.manager import ScalableRiskManager
+from src.services.polymarket import PolymarketClient
+from src.services.price_feed import PriceFeedService
+from src.services.market_discovery import MarketDiscoveryService
+from src.database import DatabaseManager
+from src.models.position import Position as DBPosition
+from src.models.trade import Trade as DBTrade
+from sqlalchemy import select, func
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -33,17 +40,27 @@ class CashBot:
     4. Scalable risk management for $10-$1000+ capital
     """
     
-    def __init__(self, total_capital: Decimal):
+    def __init__(self, total_capital: Decimal, paper_trading: bool = True):
         """Initialize the cash bot with capital."""
         self.total_capital = total_capital
         self.available_capital = total_capital
-        
-        # Core components
-        self.sentiment_analyzer = HighAccuracySentimentAnalyzer()
-        self.whale_detector = WhaleDetector("XRP_markets")  
+        self.paper_trading = paper_trading
+
+        # Initialize core components with temporal arbitrage focus
+        self.arbitrage_detector = TemporalArbitrageDetector()
+        self.whale_detector = WhaleDetector("XRP_markets")
         self.strategy = IntervalStrategy()
         self.risk_manager = ScalableRiskManager(total_capital)
-        
+
+        # Initialize services
+        self.db_manager = DatabaseManager()
+        self.polymarket = PolymarketClient(paper_trading=paper_trading)
+        self.price_feed = PriceFeedService()
+        self.market_discovery = MarketDiscoveryService(
+            polymarket_client=self.polymarket,
+            db_manager=self.db_manager
+        )
+
         # State tracking
         self.is_running = False
         self.stats = {
@@ -52,9 +69,10 @@ class CashBot:
             'signals_generated': 0,
             'signals_executed': 0
         }
-        
+
+        mode = "PAPER TRADING" if paper_trading else "LIVE TRADING"
         logger.info(
-            "Cash bot initialized",
+            f"Cash bot initialized ({mode})",
             capital=float(total_capital),
             tier=self.risk_manager.tier
         )
@@ -100,58 +118,51 @@ class CashBot:
                 continue
 
    async def _analyze_markets(self) -> None:
-        """Analyze markets for trading opportunities."""
+        """Analyze markets for temporal arbitrage opportunities."""
         try:
-            # Fetch current market data (mock for now)
-            market_data = await self._fetch_market_data()
+            # Fetch real-time spot data (Binance, Coinbase, Kraken)
+            spot_data = await self._fetch_spot_data()
             
-            if not market_data:
+            # Fetch Polymarket data
+            polymarket_data = await self._fetch_polymarket_data()
+            
+            if not spot_data or not polymarket_data:
                 return
             
-            # Get latest sentiment data
-            news_sentiment = await self._fetch_news_sentiment()
-            current_volatility = await self._fetch_volatility()
-            
-            # Analyze for trading signal
-            signal = self.sentiment_analyzer.analyze(
-                price_data=market_data,
-                news_sentiment=news_sentiment,
-                current_volatility=current_volatility
-            )
-            
-            self.stats['signals_generated'] += 1
-            
-            if signal:
-                logger.info(
-                    f"High-confidence {signal.direction} signal detected",
-                    confidence=signal.confidence,
-                    sentiment=signal.sentiment_score,
-                    reason=signal.reason
-                )
-                
-                # Check if we should trade this signal
-                if self.strategy.should_trade(
-                    signal_confidence=signal.confidence,
-                    sentiment_score=signal.sentiment_score,
-                    expected_win_rate=signal.expected_win_rate,
-                    market_liquidity=float(market_data.get('volume', [])[-1] if market_data.get('volume') else 10000),
-                    capital_available=self.available_capital
-                ):
-                    # Calculate position size
-                    position_size = self.strategy.calculate_position_size(
-                        signal.confidence,
-                        self.available_capital * Decimal(str(self.risk_manager.params['per_trade_risk']))
+            # Check each asset for arbitrage opportunities
+            for asset in self.arbitrage_detector.ASSETS:
+                if asset in spot_data and asset in polymarket_data:
+                    opportunity = self.arbitrage_detector.detect_arbitrage_opportunity(
+                        spot_data[asset],
+                        polymarket_data[asset],
+                        asset
                     )
                     
-                    # Risk check
-                    risk_check = self.risk_manager.validate_order(position_size)
-                    if risk_check.passed:
-                        # Execute trade
-                        await self._execute_trade(signal, position_size)
-                    else:
-                        logger.info(f"Trade rejected by risk management: {risk_check.reason}")
+                    self.stats['signals_generated'] += 1
+                    
+                    if opportunity:
+                        logger.info(
+                            f"Temporal arbitrage opportunity: {asset}",
+                            direction=opportunity.direction,
+                            lag=f"{opportunity.polymarket_lag:.1f}s",
+                            confidence=opportunity.confidence,
+                            urgency=opportunity.urgency
+                        )
+                        
+                        # Should trade if arbitrage is clear
+                        if opportunity.confidence > 0.90 and opportunity.polymarket_lag > 30:
+                            # Fixed position size (like the successful bot)
+                            position_size = Decimal("5000")
+                            
+                            # Risk check
+                            risk_check = self.risk_manager.validate_order(position_size)
+                            if risk_check.passed:
+                                # Execute arbitrage trade
+                                await self._execute_arbitrage(opportunity, position_size)
+                            else:
+                                logger.info(f"Arbitrage rejected by risk: {risk_check.reason}")
             else:
-                logger.debug("No high-confidence signal detected")
+                logger.debug("No temporal arbitrage opportunities detected")
                 
         except Exception as e:
             logger.error(f"Error analyzing markets: {e}")
@@ -217,7 +228,41 @@ class CashBot:
         except Exception as e:
             logger.error(f"Error checking whale alerts: {e}")
 
-    async def _execute_front_run(self, alert, position_size: Decimal) -> None:
+    async def _execute_arbitrage(self, opportunity: TemporalArbitrageOpportunity, position_size: Decimal) -> None:
+        """Execute temporal arbitrage position."""
+        try:
+            # Calculate entry price (use current Polymarket price)
+            current_price = opportunity.polymarket_price
+            
+            # Create position for arbitrage
+            position = self.strategy.create_position(
+                market_id=f"{opportunity.direction}_{opportunity.urgency}_{self.stats['total_trades']}",
+                side=opportunity.direction.lower(),
+                size=position_size,
+                entry_price=Decimal(str(current_price)),
+                sentiment_score=opportunity.spot_momentum,
+                confidence=opportunity.confidence
+            )
+            
+            # Update capital
+            self.available_capital -= position_size
+            
+            # Track position in risk manager
+            position_id = f"arb_{opportunity.urgency}_{self.stats['total_trades']}"
+            self.risk_manager.add_position(position_id, position_size)
+            
+            self.stats['signals_executed'] += 1
+            
+            logger.info(
+                f"Arbitrage opportunity exploited: {opportunity.direction}",
+                lag=f"{opportunity.polymarket_lag:.1f}s",
+                size=float(position_size),
+                price=current_price,
+                confidence=opportunity.confidence
+            )
+            
+        except Exception as e:
+            logger.error(f"Error executing arbitrage: {e}")
         """Execute front-running trade based on whale detection."""
         try:
             # Determine trade direction (opposite of whale's direction)
@@ -316,38 +361,180 @@ class CashBot:
             logger.error(f"Error checking risk limits: {e}")
 
     # Mock data methods (would integrate with real services)
-    async def _fetch_market_data(self) -> Optional[Dict[str, Any]]:
-        """Fetch current market data."""
-        # Mock implementation
-        import random
-        return {
-            'close': [1.0 + random.uniform(-0.01, 0.01) for _ in range(30)],
-            'volume': [random.randint(1000, 5000) for _ in range(30)]
-        }
-
-    async def _fetch_news_sentiment(self) -> float:
-        """Fetch current news sentiment."""
-        # Mock implementation - would use real news service
-        import random
-        return random.uniform(-50, 50)
-
-    async def _fetch_volatility(self) -> float:
-        """Fetch current market volatility."""
-        # Mock implementation
-        return 0.15
-
-    async def _fetch_orderbook(self) -> Optional[OrderbookSnapshot]:
-        """Fetch current orderbook."""
-        # Mock implementation
+    async def _fetch_spot_data(self) -> Dict[str, Dict[str, Any]]:
+        """Fetch real-time spot data from exchanges via PriceFeedService."""
         try:
+            # Fetch multi-asset prices from real exchanges (CoinGecko/CoinCap)
+            prices = await self.price_feed.get_multi_asset_prices(["bitcoin", "ethereum", "solana"])
+
+            if not prices:
+                logger.warning("Failed to fetch spot prices")
+                return {}
+
+            # Format data for arbitrage detector
+            formatted_data = {}
+            asset_mapping = {
+                "bitcoin": "BTC",
+                "ethereum": "ETH",
+                "solana": "SOL"
+            }
+
+            for coin_id, symbol in asset_mapping.items():
+                if coin_id in prices:
+                    price = prices[coin_id]["usd"]
+                    formatted_data[symbol] = {
+                        "price": price,
+                        "prices": [price] * 10,  # Simplified for now, could fetch historical
+                        "volume": prices[coin_id].get("usd_24h_vol", 0)
+                    }
+
+            return formatted_data
+
+        except Exception as e:
+            logger.error(f"Error fetching spot data: {e}")
+            return {}
+
+    async def _fetch_polymarket_data(self) -> Dict[str, Dict[str, Any]]:
+        """Fetch Polymarket prediction market data via MarketDiscoveryService."""
+        try:
+            # Discover and filter markets for BTC, ETH, SOL
+            markets = await self.market_discovery.discover_markets()
+
+            if not markets:
+                logger.warning("No Polymarket markets found")
+                return {}
+
+            # Format data by asset
+            formatted_data = {}
+            for market in markets:
+                asset = market.asset.upper()  # "BTC", "ETH", or "SOL"
+                if asset not in formatted_data:
+                    formatted_data[asset] = {
+                        "price": float(market.yes_price or 0.5),  # Current market price
+                        "volume": float(market.volume_24h or 0),
+                        "market_id": market.market_id,
+                        "liquidity": float(market.liquidity or 0)
+                    }
+
+            return formatted_data
+
+        except Exception as e:
+            logger.error(f"Error fetching Polymarket data: {e}")
+            return {}
+
+    async def _fetch_orderbook(self, market_id: str) -> Optional[OrderbookSnapshot]:
+        """Fetch current orderbook from Polymarket."""
+        try:
+            orderbook = await self.polymarket.get_orderbook(market_id)
+
+            if not orderbook:
+                logger.warning(f"Failed to fetch orderbook for {market_id}")
+                return None
+
             return OrderbookSnapshot(
-                bids=[{'price': 0.55, 'size': 1000}, {'price': 0.54, 'size': 1500}],
-                asks=[{'price': 0.56, 'size': 1200}, {'price': 0.57, 'size': 1000}],
+                bids=orderbook.get("bids", []),
+                asks=orderbook.get("asks", []),
                 timestamp=datetime.now(),
-                market_id="XRP_UP_15min"
+                market_id=market_id
             )
-        except:
+
+        except Exception as e:
+            logger.error(f"Error fetching orderbook for {market_id}: {e}")
             return None
+
+    # Database Persistence Methods
+    async def _save_position_to_db(self, position: Position, market_id: str) -> Optional[DBPosition]:
+        """Save position to database."""
+        try:
+            async with self.db_manager.session() as session:
+                db_position = DBPosition(
+                    market_id=market_id,
+                    side=position.side,
+                    size=position.size,
+                    entry_price=position.entry_price,
+                    sentiment_score=position.sentiment_score,
+                    confidence=Decimal(str(position.confidence)),
+                    is_open=True
+                )
+                session.add(db_position)
+                await session.commit()
+                await session.refresh(db_position)
+                logger.info(f"Position saved to DB: {db_position.id}")
+                return db_position
+
+        except Exception as e:
+            logger.error(f"Error saving position to DB: {e}")
+            return None
+
+    async def _update_position_in_db(self, position_id: int, current_price: Decimal, is_open: bool = True) -> None:
+        """Update position in database with current price."""
+        try:
+            async with self.db_manager.session() as session:
+                result = await session.execute(
+                    select(DBPosition).where(DBPosition.id == position_id)
+                )
+                db_position = result.scalar_one_or_none()
+
+                if db_position:
+                    db_position.update_pnl(current_price)
+                    db_position.is_open = is_open
+                    if not is_open:
+                        db_position.closed_at = datetime.now()
+                    await session.commit()
+                    logger.debug(f"Position {position_id} updated in DB")
+
+        except Exception as e:
+            logger.error(f"Error updating position in DB: {e}")
+
+    async def _save_trade_to_db(self, position: Position, market_id: str, exit_price: Decimal, pnl: Decimal) -> Optional[DBTrade]:
+        """Save completed trade to database."""
+        try:
+            async with self.db_manager.session() as session:
+                db_trade = DBTrade(
+                    market_id=market_id,
+                    side=position.side,
+                    entry_price=position.entry_price,
+                    exit_price=exit_price,
+                    size=position.size,
+                    pnl=pnl,
+                    strategy="temporal_arbitrage",
+                    confidence=Decimal(str(position.confidence))
+                )
+                session.add(db_trade)
+                await session.commit()
+                await session.refresh(db_trade)
+                logger.info(f"Trade saved to DB: {db_trade.id}, P&L: ${float(pnl):.2f}")
+                return db_trade
+
+        except Exception as e:
+            logger.error(f"Error saving trade to DB: {e}")
+            return None
+
+    async def _get_recent_win_rate(self, num_trades: int = 20) -> float:
+        """Get win rate from recent trades in database."""
+        try:
+            async with self.db_manager.session() as session:
+                # Get recent trades
+                result = await session.execute(
+                    select(DBTrade)
+                    .order_by(DBTrade.executed_at.desc())
+                    .limit(num_trades)
+                )
+                recent_trades = result.scalars().all()
+
+                if not recent_trades:
+                    return 0.0
+
+                # Calculate win rate
+                wins = sum(1 for trade in recent_trades if trade.is_winner())
+                win_rate = wins / len(recent_trades)
+
+                logger.debug(f"Recent win rate ({len(recent_trades)} trades): {win_rate:.1%}")
+                return win_rate
+
+        except Exception as e:
+            logger.error(f"Error calculating recent win rate: {e}")
+            return 0.0
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get current performance summary."""

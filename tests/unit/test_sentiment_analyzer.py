@@ -1,4 +1,4 @@
-"""Unit tests for HighAccuracySentimentAnalyzer."""
+"""Unit tests for TemporalArbitrageDetector."""
 
 import pytest
 from datetime import datetime
@@ -9,19 +9,19 @@ import pandas as pd
 
 from src.lib.exceptions import InsufficientDataError, LowConfidenceError
 from src.lib.sentiment.analyzer import (
-    HighAccuracySentimentAnalyzer,
-    Signal,
+    TemporalArbitrageDetector,
+    TemporalArbitrageOpportunity,
     TimeframeSentiment
 )
 
 
-class TestHighAccuracySentimentAnalyzer:
-    """Test cases for the sentiment analyzer."""
+class TestTemporalArbitrageDetector:
+    """Test cases for the temporal arbitrage detector."""
 
     @pytest.fixture
     def analyzer(self):
         """Create analyzer instance for testing."""
-        return HighAccuracySentimentAnalyzer()
+        return TemporalArbitrageDetector()
 
     @pytest.fixture
     def sample_price_data(self):
@@ -341,25 +341,27 @@ class TestHighAccuracySentimentAnalyzer:
         assert "bullish" in reason.lower() or "bearish" in reason.lower()
         assert "high confidence" in reason.lower()
 
-    def test_signal_dataclass(self):
-        """Test Signal dataclass validation."""
-        signal = Signal(
+    def test_arbitrage_opportunity_dataclass(self):
+        """Test TemporalArbitrageOpportunity dataclass validation."""
+        opportunity = TemporalArbitrageOpportunity(
             direction="BUY",
-            confidence=0.85,
-            sentiment_score=45.0,
-            expected_win_rate=0.78,
-            timeframe_alignment=0.92,
-            strength=0.85,
-            reason="Strong bullish signal across all timeframes"
+            spot_momentum=45.0,
+            polymarket_lag=35.5,
+            implied_probability=0.78,
+            polymarket_price=0.52,
+            certainty_gap=0.26,
+            confidence=0.92,
+            expected_win_rate=0.98,
+            urgency="HIGH"
         )
-        
-        assert signal.direction == "BUY"
-        assert signal.confidence == 0.85
-        assert signal.sentiment_score == 45.0
-        assert signal.expected_win_rate == 0.78
-        assert signal.timeframe_alignment == 0.92
-        assert signal.strength == 0.85
-        assert "bullish" in signal.reason
+
+        assert opportunity.direction == "BUY"
+        assert opportunity.confidence == 0.92
+        assert opportunity.spot_momentum == 45.0
+        assert opportunity.expected_win_rate == 0.98
+        assert opportunity.polymarket_lag == 35.5
+        assert opportunity.urgency == "HIGH"
+        assert opportunity.certainty_gap == 0.26
 
     def test_timeframe_sentiment_dataclass(self):
         """Test TimeframeSentiment dataclass validation."""
