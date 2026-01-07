@@ -58,7 +58,8 @@ class CashBot:
         self.price_feed = PriceFeedService()
         self.market_discovery = MarketDiscoveryService(
             polymarket_client=self.polymarket,
-            db_manager=self.db_manager
+            price_feed=self.price_feed,
+            db_manager=self.db_manager,
         )
 
         # State tracking
@@ -69,6 +70,9 @@ class CashBot:
             'signals_generated': 0,
             'signals_executed': 0
         }
+
+        # Track mapping of position market_id to risk_manager position_id
+        self.position_id_map = {}  # {market_id: risk_position_id}
 
         mode = "PAPER TRADING" if paper_trading else "LIVE TRADING"
         logger.info(
@@ -117,7 +121,7 @@ class CashBot:
                 # Continue running even after errors
                 continue
 
-   async def _analyze_markets(self) -> None:
+    async def _analyze_markets(self) -> None:
         """Analyze markets for temporal arbitrage opportunities."""
         try:
             # Fetch real-time spot data (Binance, Coinbase, Kraken)
@@ -130,6 +134,7 @@ class CashBot:
                 return
             
             # Check each asset for arbitrage opportunities
+            found_opportunity = False
             for asset in self.arbitrage_detector.ASSETS:
                 if asset in spot_data and asset in polymarket_data:
                     opportunity = self.arbitrage_detector.detect_arbitrage_opportunity(
@@ -141,6 +146,7 @@ class CashBot:
                     self.stats['signals_generated'] += 1
                     
                     if opportunity:
+                        found_opportunity = True
                         logger.info(
                             f"Temporal arbitrage opportunity: {asset}",
                             direction=opportunity.direction,
@@ -161,7 +167,7 @@ class CashBot:
                                 await self._execute_arbitrage(opportunity, position_size)
                             else:
                                 logger.info(f"Arbitrage rejected by risk: {risk_check.reason}")
-            else:
+            if not found_opportunity:
                 logger.debug("No temporal arbitrage opportunities detected")
                 
         except Exception as e:
@@ -184,8 +190,10 @@ class CashBot:
             # Update capital
             self.available_capital -= position_size
             
-            # Track position in risk manager
-            self.risk_manager.add_position(f"pos_{self.stats['total_trades']}", position_size)
+            # Track position in risk manager with mapping
+            risk_position_id = f"pos_{self.stats['total_trades']}"
+            self.risk_manager.add_position(risk_position_id, position_size)
+            self.position_id_map[position.market_id] = risk_position_id
             
             self.stats['signals_executed'] += 1
             
@@ -202,28 +210,35 @@ class CashBot:
     async def _check_whale_alerts(self) -> None:
         """Monitor for whale trading opportunities."""
         try:
-            # Fetch current orderbook (mock)
-            orderbook_snapshot = await self._fetch_orderbook()
-            
-            if orderbook_snapshot:
-                alerts = self.whale_detector.update_orderbook_snapshot(orderbook_snapshot)
-                
-                for alert in alerts:
-                    logger.info(
-                        f"Whale detected: {alert.side}",
-                        size=float(alert.order_size),
-                        impact=alert.expected_impact
-                    )
-                    
-                    # Check if we should front-run this whale
-                    if alert.confidence > 0.75 and alert.expected_impact > self.whale_detector.MIN_IMPACT_THRESHOLD:
-                        position_size = self.whale_detector.calculate_front_run_position_size(
-                            alert, self.available_capital
+            # Get active markets to monitor
+            polymarket_data = await self._fetch_polymarket_data()
+
+            # Monitor orderbook for each active market
+            for asset, market_info in polymarket_data.items():
+                market_id = market_info.get("market_id")
+                if not market_id:
+                    continue
+
+                orderbook_snapshot = await self._fetch_orderbook(market_id)
+
+                if orderbook_snapshot:
+                    alerts = self.whale_detector.update_orderbook_snapshot(orderbook_snapshot)
+
+                    for alert in alerts:
+                        logger.info(
+                            f"Whale detected: {alert.side}, "
+                            f"Size: {float(alert.order_size)}, Impact: {alert.expected_impact}"
                         )
-                        
-                        if position_size > Decimal("0"):
-                            # Create front-running position
-                            await self._execute_front_run(alert, position_size)
+
+                        # Check if we should front-run this whale
+                        if alert.confidence > 0.75 and alert.expected_impact > self.whale_detector.MIN_IMPACT_THRESHOLD:
+                            position_size = self.whale_detector.calculate_front_run_position_size(
+                                alert, self.available_capital
+                            )
+
+                            if position_size > Decimal("0"):
+                                # Create front-running position
+                                await self._execute_front_run(alert, position_size, market_id)
                             
         except Exception as e:
             logger.error(f"Error checking whale alerts: {e}")
@@ -235,21 +250,23 @@ class CashBot:
             current_price = opportunity.polymarket_price
             
             # Create position for arbitrage
+            market_id = f"{opportunity.direction}_{opportunity.urgency}_{self.stats['total_trades']}"
             position = self.strategy.create_position(
-                market_id=f"{opportunity.direction}_{opportunity.urgency}_{self.stats['total_trades']}",
+                market_id=market_id,
                 side=opportunity.direction.lower(),
                 size=position_size,
                 entry_price=Decimal(str(current_price)),
                 sentiment_score=opportunity.spot_momentum,
                 confidence=opportunity.confidence
             )
-            
+
             # Update capital
             self.available_capital -= position_size
-            
-            # Track position in risk manager
-            position_id = f"arb_{opportunity.urgency}_{self.stats['total_trades']}"
-            self.risk_manager.add_position(position_id, position_size)
+
+            # Track position in risk manager with mapping
+            risk_position_id = f"arb_{opportunity.urgency}_{self.stats['total_trades']}"
+            self.risk_manager.add_position(risk_position_id, position_size)
+            self.position_id_map[market_id] = risk_position_id
             
             self.stats['signals_executed'] += 1
             
@@ -263,33 +280,38 @@ class CashBot:
             
         except Exception as e:
             logger.error(f"Error executing arbitrage: {e}")
+
+    async def _execute_front_run(self, alert, position_size: Decimal, market_id: str) -> None:
         """Execute front-running trade based on whale detection."""
         try:
             # Determine trade direction (opposite of whale's direction)
             trade_side = "sell" if alert.side == "buy" else "buy"
             trade_direction = "SELL" if alert.side == "buy" else "BUY"
-            
+
             logger.info(
-                f"Executing whale front-run: {trade_side}",
-                size=float(position_size),
-                whale_size=float(alert.order_size)
+                f"Executing whale front-run: {trade_side}, "
+                f"Size: {float(position_size)}, Whale size: {float(alert.order_size)}"
             )
-            
+
             # Create position for front-run
             position = self.strategy.create_position(
-                market_id=f"whale_frontrun_{self.stats['total_trades']}",
+                market_id=market_id,
                 side=trade_side,
                 size=position_size,
                 entry_price=Decimal("0.55"),
                 sentiment_score=70 if trade_side == "buy" else -70,
                 confidence=alert.confidence
             )
-            
+
             self.available_capital -= position_size
-            self.risk_manager.add_position(f"whale_{self.stats['total_trades']}", position_size)
-            
-            logger.info(f"Front-run position opened: {trade_direction.upper()}")
-            
+
+            # Track position in risk manager with mapping
+            risk_position_id = f"whale_{self.stats['total_trades']}"
+            self.risk_manager.add_position(risk_position_id, position_size)
+            self.position_id_map[market_id] = risk_position_id
+
+            logger.info(f"Front-run position opened: {trade_direction}")
+
         except Exception as e:
             logger.error(f"Error executing front-run: {e}")
 
@@ -326,9 +348,14 @@ class CashBot:
             
             # Update available capital
             self.available_capital += Decimal(str(trade['size'])) + Decimal(str(trade['pnl']))
-            
-            # Update risk manager
-            self.risk_manager.remove_position(position.market_id)
+
+            # Update risk manager using mapped position ID
+            risk_position_id = self.position_id_map.get(position.market_id)
+            if risk_position_id:
+                self.risk_manager.remove_position(risk_position_id)
+                del self.position_id_map[position.market_id]
+            else:
+                logger.warning(f"No risk position ID found for market_id: {position.market_id}")
             
             # Update statistics
             self.stats['total_trades'] += 1
@@ -365,7 +392,7 @@ class CashBot:
         """Fetch real-time spot data from exchanges via PriceFeedService."""
         try:
             # Fetch multi-asset prices from real exchanges (CoinGecko/CoinCap)
-            prices = await self.price_feed.get_multi_asset_prices(["bitcoin", "ethereum", "solana"])
+            prices = await self.price_feed.get_multi_asset_prices(["BTC", "ETH", "SOL"])
 
             if not prices:
                 logger.warning("Failed to fetch spot prices")
@@ -373,20 +400,13 @@ class CashBot:
 
             # Format data for arbitrage detector
             formatted_data = {}
-            asset_mapping = {
-                "bitcoin": "BTC",
-                "ethereum": "ETH",
-                "solana": "SOL"
-            }
-
-            for coin_id, symbol in asset_mapping.items():
-                if coin_id in prices:
-                    price = prices[coin_id]["usd"]
-                    formatted_data[symbol] = {
-                        "price": price,
-                        "prices": [price] * 10,  # Simplified for now, could fetch historical
-                        "volume": prices[coin_id].get("usd_24h_vol", 0)
-                    }
+            for symbol, asset_data in prices.items():
+                price = asset_data["price"]
+                formatted_data[symbol] = {
+                    "price": price,
+                    "prices": [price] * 10,  # Simplified for now, could fetch historical
+                    "volume": asset_data.get("volume", 0),
+                }
 
             return formatted_data
 
@@ -397,7 +417,7 @@ class CashBot:
     async def _fetch_polymarket_data(self) -> Dict[str, Dict[str, Any]]:
         """Fetch Polymarket prediction market data via MarketDiscoveryService."""
         try:
-            # Discover and filter markets for BTC, ETH, SOL
+            # Discover and filter markets for BTC, ETH, XRP
             markets = await self.market_discovery.discover_markets()
 
             if not markets:
@@ -407,13 +427,15 @@ class CashBot:
             # Format data by asset
             formatted_data = {}
             for market in markets:
-                asset = market.asset.upper()  # "BTC", "ETH", or "SOL"
+                if not market.related_asset:
+                    continue
+                asset = market.related_asset.upper()  # "BTC", "ETH", or "XRP"
                 if asset not in formatted_data:
                     formatted_data[asset] = {
                         "price": float(market.yes_price or 0.5),  # Current market price
                         "volume": float(market.volume_24h or 0),
-                        "market_id": market.market_id,
-                        "liquidity": float(market.liquidity or 0)
+                        "market_id": market.id,
+                        "liquidity": float(market.liquidity or 0),
                     }
 
             return formatted_data
@@ -425,7 +447,7 @@ class CashBot:
     async def _fetch_orderbook(self, market_id: str) -> Optional[OrderbookSnapshot]:
         """Fetch current orderbook from Polymarket."""
         try:
-            orderbook = await self.polymarket.get_orderbook(market_id)
+            orderbook = await self.polymarket.get_order_book(market_id)
 
             if not orderbook:
                 logger.warning(f"Failed to fetch orderbook for {market_id}")

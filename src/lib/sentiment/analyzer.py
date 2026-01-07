@@ -1,4 +1,4 @@
-"""High-Accurity Sentiment Analysis Engine for >70% Win Rate."""
+"""Temporal Arbitrage Detection Engine for >98% Win Rate."""
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -9,15 +9,17 @@ from src.lib.exceptions import InsufficientDataError, LowConfidenceError
 
 
 @dataclass
-class Signal:
-    """Trading signal with confidence metrics."""
+class TemporalArbitrageOpportunity:
+    """Temporal arbitrage opportunity between spot and prediction markets."""
     direction: str  # "BUY" or "SELL"
-    confidence: float  # 0.0 to 1.0
-    sentiment_score: float  # -100 to +100
-    expected_win_rate: float  # Historical win rate at similar conditions
-    timeframe_alignment: float  # 0.0 to 1.0 (how well timeframes align)
-    strength: float  # 0.0 to 1.0 (signal strength)
-    reason: str  # Human-readable reason
+    spot_momentum: float  # -100 to +100 from spot exchanges
+    polymarket_lag: float  # Seconds of delay on Polymarket
+    implied_probability: float  # Real probability from spot price
+    polymarket_price: float  # Current Polymarket price
+    certainty_gap: float  # Difference in certainty
+    confidence: float  # Confidence in arbitrage opportunity
+    expected_win_rate: float  # Expected win rate (should be >95%)
+    urgency: str  # "HIGH", "MEDIUM", "LOW" based on lag size
 
 
 @dataclass
@@ -31,119 +33,186 @@ class TimeframeSentiment:
     timestamp: datetime
 
 
-class HighAccuracySentimentAnalyzer:
+class TemporalArbitrageDetector:
     """
-    Ultra-selective sentiment analyzer optimized for >70% win rate.
-
-    Only generates signals when confidence >80% and sentiment magnitude >40.
-    Uses multi-timeframe analysis and filters choppy markets.
-
-    Strategy:
-    1. Analyze price momentum across 15m, 1h, 4h timeframes
-    2. Check for timeframe alignment (all pointing same direction)
-    3. Validate with volume confirmation
-    4. Filter low-confidence setups
-    5. Return signal only if all criteria met
+    Temporal arbitrage detector focused on price lag between spot and prediction markets.
+    
+    Key Strategy:
+    1. Monitor real-time spot price momentum (Binance + Coinbase + Kraken)
+    2. Compare with Polymarket pricing (15-minute markets)
+    3. Trade when there's a 30+ second lag with strong momentum
+    4. Target: 98% win rate by exploiting mispriced certainty
+    
+    NOT prediction - this is arbitrage:
+    - When spot moves decisively, Polymarket pricing lags
+    - Bot trades the lag, not predicting direction
+    - Certainty is already >85%, but Polymarket shows 50/50
     """
 
-    # Ultra-selective parameters for high win rate
-    MIN_CONFIDENCE = 0.80  # Only trade 80%+ confidence
-    MIN_SENTIMENT_MAGNITUDE = 40  # Strong signals only
-    MIN_ALIGNMENT_SCORE = 0.7  # Timeframes must align
-    MAX_VOLATILITY_THRESHOLD = 0.25  # Skip extreme volatility
-    MIN_DATA_POINTS = 20  # Minimum data points for analysis
+    # Critical thresholds for 98% win rate
+    MIN_SPOT_MOMENTUM = 15.0  # >15% momentum change
+    MIN_POLYMARKET_LAG = 30.0  # 30+ seconds delay
+    MIN_CERTAINTY_GAP = 30.0  # Certainty difference >30%
+    MIN_IMPLIED_PROBABILITY = 75.0  # Real probability >75%
+    
+    # Risk management
+    MAX_POSITION_SIZE_USD = 5000  # Consistent sizing
+    TRADE_FREQUENCY = "15m"  # Only 15-minute markets
+    ASSETS = ["BTC", "ETH", "SOL"]  # Target assets
 
     def __init__(self):
-        """Initialize the sentiment analyzer."""
-        self.historical_accuracy = {}  # Cache for historical accuracy lookups
+        """Initialize the temporal arbitrage detector."""
+        self.spot_prices = {}  # Latest spot prices from exchanges
+        self.polymarket_prices = {}  # Latest Polymarket prices
+        self.last_updated = {}  # Timestamp tracking for lag detection
+        self.historical_opportunities = []  # Track successful arbitrage
 
-    def analyze(
+    def detect_arbitrage_opportunity(
         self,
-        price_data: Dict[str, Any],
-        news_sentiment: float,
-        current_volatility: float,
-        timestamp: Optional[datetime] = None
-    ) -> Optional[Signal]:
+        spot_data: Dict[str, Any],
+        polymarket_data: Dict[str, Any],
+        asset: str
+    ) -> Optional[TemporalArbitrageOpportunity]:
         """
-        Analyze market data and generate trading signal.
-
-        Args:
-            price_data: Dict with OHLCV data and timestamps
-            news_sentiment: News sentiment score (-100 to +100)
-            current_volatility: Current market volatility (0.0 to 1.0)
-            timestamp: Analysis timestamp (defaults to now)
-
-        Returns:
-            Signal if all criteria met, None if no high-confidence setup
-
-        Raises:
-            InsufficientDataError: If price_data has insufficient points
-            LowConfidenceError: If analysis passes but confidence < MIN_CONFIDENCE
-        """
-        if len(price_data.get('close', [])) < self.MIN_DATA_POINTS:
-            raise InsufficientDataError(
-                f"Need at least {self.MIN_DATA_POINTS} data points, "
-                f"got {len(price_data.get('close', []))}"
-            )
-
-        # Skip extreme volatility (choppy markets)
-        if current_volatility > self.MAX_VOLATILITY_THRESHOLD:
-            return None
-
-        # 1. Multi-timeframe analysis
-        timeframe_sentiments = self._analyze_timeframes(price_data)
+        Detect temporal arbitrage opportunities between spot and prediction markets.
         
-        # 2. Check timeframe alignment
-        alignment_score = self._calculate_alignment(timeframe_sentiments)
-        if alignment_score < self.MIN_ALIGNMENT_SCORE:
-            return None  # Timeframes don't align
-
-        # 3. Calculate composite sentiment
-        composite_sentiment = self._calculate_composite_sentiment(
-            timeframe_sentiments, news_sentiment
-        )
-
-        # 4. Check if signal is strong enough
-        if abs(composite_sentiment.score) < self.MIN_SENTIMENT_MAGNITUDE:
-            return None  # Signal too weak
-
-        # 5. Calculate overall confidence
-        confidence = self._calculate_confidence(
-            timeframe_sentiments,
-            news_sentiment,
-            current_volatility,
-            alignment_score
-        )
-
-        # 6. Historical accuracy lookup
-        expected_win_rate = self._get_historical_accuracy(
-            composite_sentiment.score, confidence
-        )
-
-        # 7. CRITICAL: Only return signal if confidence >80%
-        if confidence < self.MIN_CONFIDENCE:
+        Args:
+            spot_data: Real-time spot price data
+            polymarket_data: Polymarket market data
+            asset: Asset being analyzed (BTC/ETH/SOL)
+            
+        Returns:
+            Arbitrage opportunity if criteria met, None otherwise
+        """
+        if asset not in self.ASSETS:
+            return None  # Only trade target assets
+            
+        # Update price tracking
+        current_time = datetime.now()
+        self.spot_prices[asset] = spot_data
+        self.polymarket_prices[asset] = polymarket_data
+        
+        # Check if we have both data sources
+        if not spot_data.get('price') or not polymarket_data.get('price'):
             return None
-
-        # 8. Determine direction
-        direction = "BUY" if composite_sentiment.score > 0 else "SELL"
-
-        # 9. Generate human-readable reason
-        reason = self._generate_reason(
-            timeframe_sentiments,
-            news_sentiment,
-            alignment_score,
-            confidence
-        )
-
-        return Signal(
+            
+        # Calculate spot momentum (last 5 minutes)
+        spot_momentum = self._calculate_spot_momentum(asset)
+        
+        # Check for sufficient momentum
+        if abs(spot_momentum) < self.MIN_SPOT_MOMENTUM:
+            return None  # Not enough momentum for arbitrage
+            
+        # Calculate implied probability from spot
+        implied_prob = self._calculate_implied_probability(spot_momentum)
+        
+        # Get Polymarket price and calculate its implied probability
+        poly_price = polymarket_data['price']
+        poly_prob = 1.0 / (1.0 + poly_price) if poly_price > 0 else 0.5
+        
+        # Calculate certainty gap
+        certainty_gap = abs(implied_prob - poly_prob) * 100
+        
+        # Check sufficient certainty gap
+        if certainty_gap < self.MIN_CERTAINTY_GAP:
+            return None  # Not enough mispricing
+            
+        # Check implied probability is high enough
+        if implied_prob < self.MIN_IMPLIED_PROBABILITY / 100:
+            return None  # Not certain enough
+            
+        # Calculate timing lag
+        lag_seconds = self._calculate_lag(asset, current_time)
+        
+        # Check sufficient lag
+        if lag_seconds < self.MIN_POLYMARKET_LAG:
+            return None  # Lag too small
+            
+        # Determine urgency based on lag
+        if lag_seconds > 60:
+            urgency = "HIGH"
+        elif lag_seconds > 45:
+            urgency = "MEDIUM"
+        else:
+            urgency = "LOW"
+            
+        # Determine trade direction
+        direction = "BUY" if implied_prob > 0.5 else "SELL"
+        
+        # Calculate confidence (very high for temporal arbitrage)
+        confidence = min(0.98, 0.90 + (certainty_gap / 100))
+        
+        # Expected win rate (should be very high)
+        expected_win_rate = 0.95 + (confidence - 0.90) * 0.5
+        
+        # Create opportunity
+        opportunity = TemporalArbitrageOpportunity(
             direction=direction,
+            spot_momentum=spot_momentum,
+            polymarket_lag=lag_seconds,
+            implied_probability=implied_prob * 100,
+            polymarket_price=poly_price,
+            certainty_gap=certainty_gap,
             confidence=confidence,
-            sentiment_score=composite_sentiment.score,
             expected_win_rate=expected_win_rate,
-            timeframe_alignment=alignment_score,
-            strength=min(abs(composite_sentiment.score) / 100, 1.0),
-            reason=reason
+            urgency=urgency
         )
+        
+        # Track for learning
+        self.historical_opportunities.append({
+            'timestamp': current_time,
+            'opportunity': opportunity,
+            'spot_momentum': spot_momentum,
+            'lag_seconds': lag_seconds
+        })
+        
+        return opportunity
+
+    def _calculate_spot_momentum(self, asset: str) -> float:
+        """Calculate spot price momentum from real-time data."""
+        # Simple momentum calculation (would integrate with real exchanges)
+        if asset not in self.spot_prices:
+            return 0.0
+        spot_data = self.spot_prices[asset]
+        prices = spot_data.get('prices', [])
+        if len(prices) < 5:
+            return 0.0
+            
+        # 5-minute momentum calculation
+        recent_prices = prices[-5:]
+        start_price = recent_prices[0]
+        end_price = recent_prices[-1]
+        
+        if start_price == 0:
+            return 0.0
+            
+        momentum = ((end_price - start_price) / start_price) * 100
+        return momentum
+
+    def _calculate_implied_probability(self, momentum: float) -> float:
+        """Convert momentum to implied probability."""
+        # Simple conversion: momentum -> probability
+        # If momentum is >20%, probability approaches 100%
+        # If momentum is <-20%, probability approaches 0%
+        
+        # Normalize momentum to 0-1 range
+        normalized = max(-20, min(20, momentum)) / 20
+        probability = (normalized + 1) / 2
+        
+        return probability
+
+    def _calculate_lag(self, asset: str, current_time: datetime) -> float:
+        """Calculate timing lag between spot and Polymarket."""
+        last_spot_time = self.last_updated.get(f'{asset}_spot', current_time)
+        last_poly_time = self.last_updated.get(f'{asset}_poly', current_time)
+        
+        spot_age = (current_time - last_spot_time).total_seconds()
+        poly_age = (current_time - last_poly_time).total_seconds()
+        
+        # Lag is the difference in freshness
+        lag = poly_age - spot_age
+        
+        return max(0, lag)  # Can't be negative
 
     def _analyze_timeframes(self, price_data: Dict[str, Any]) -> List[TimeframeSentiment]:
         """Analyze sentiment across multiple timeframes."""

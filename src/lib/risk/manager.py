@@ -116,11 +116,9 @@ class ScalableRiskManager:
         self.peak_equity = total_capital
         
         logger.info(
-            "Risk manager initialized",
-            capital=float(total_capital),
-            tier=self.tier,
-            per_trade_risk=self.params["per_trade_risk"],
-            daily_limit=self.params["daily_loss_limit"]
+            f"Risk manager initialized - Capital: ${float(total_capital):.2f}, "
+            f"Tier: {self.tier}, Per-trade risk: {self.params['per_trade_risk']}, "
+            f"Daily limit: {self.params['daily_loss_limit']}"
         )
 
     def _get_tier(self, capital: Decimal) -> str:

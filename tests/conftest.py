@@ -2,6 +2,7 @@
 
 import asyncio
 import pytest
+import os
 import uuid
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -10,7 +11,6 @@ from typing import AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 
-from src.config import settings
 from src.models.base import Base
 from src.models import Market, Order, Trade, Position, SentimentScore, WhaleAlert
 
@@ -43,7 +43,10 @@ async def test_engine():
 
     Uses separate test database to avoid conflicts with development data.
     """
-    test_db_url = "postgresql+asyncpg://cashbot_user:dev_password@localhost:5432/poly_cashbot_test"
+    test_db_url = os.getenv(
+        "TEST_DATABASE_URL",
+        "postgresql+asyncpg://cashbot_user:dev_password@localhost:5432/poly_cashbot_test",
+    )
 
     engine = create_async_engine(
         test_db_url,
