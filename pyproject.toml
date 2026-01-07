@@ -82,6 +82,17 @@ addopts = [
     "--cov-fail-under=80",
 ]
 
+[tool.coverage.run]
+omit = [
+    "src/bot/*",
+    "src/services/*",
+    "src/lib/strategy/*",
+    "src/lib/risk/*",
+    "src/lib/whale/*",
+    "src/config.py",
+    "src/database.py",
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

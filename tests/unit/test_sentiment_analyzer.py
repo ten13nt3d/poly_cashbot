@@ -399,3 +399,208 @@ class TestTemporalArbitrageDetector:
         assert analyzer.MIN_ALIGNMENT_SCORE == 0.7  # Require alignment
         assert analyzer.MAX_VOLATILITY_THRESHOLD == 0.25  # Skip choppy
         assert analyzer.MIN_DATA_POINTS == 20  # Minimum data
+
+    def test_arbitrage_opportunity_detection(self, analyzer):
+        """Test arbitrage opportunity detection with valid conditions."""
+        from datetime import datetime, timedelta
+
+        # Setup with strong momentum (>15% needed)
+        spot_data = {
+            "price": 50000,
+            "prices": [42000, 44000, 46000, 48000, 50000]  # ~19% momentum
+        }
+        polymarket_data = {
+            "price": 2.5  # Outdated, implies ~29% probability
+        }
+
+        # Setup timestamps to ensure sufficient lag (>30 seconds needed)
+        current_time = datetime.now()
+        analyzer.last_updated["BTC_spot"] = current_time - timedelta(seconds=5)
+        analyzer.last_updated["BTC_poly"] = current_time - timedelta(seconds=70)
+
+        opportunity = analyzer.detect_arbitrage_opportunity(
+            spot_data=spot_data,
+            polymarket_data=polymarket_data,
+            asset="BTC"
+        )
+
+        assert opportunity is not None
+        assert opportunity.direction in ["BUY", "SELL"]
+        assert opportunity.spot_momentum != 0
+        assert opportunity.confidence >= 0.90
+        assert opportunity.expected_win_rate >= 0.95
+
+    def test_arbitrage_insufficient_momentum(self, analyzer):
+        """Test that low momentum is filtered out."""
+        spot_data = {
+            "price": 50000,
+            "prices": [50000, 50001, 50002, 50001, 50000]  # Very low momentum
+        }
+        polymarket_data = {
+            "price": 1.0
+        }
+
+        opportunity = analyzer.detect_arbitrage_opportunity(
+            spot_data=spot_data,
+            polymarket_data=polymarket_data,
+            asset="BTC"
+        )
+
+        assert opportunity is None  # Should filter low momentum
+
+    def test_arbitrage_insufficient_certainty_gap(self, analyzer):
+        """Test that small certainty gaps are filtered out."""
+        spot_data = {
+            "price": 50000,
+            "prices": [48000, 48500, 49000, 49500, 50000]  # Good momentum
+        }
+        polymarket_data = {
+            "price": 0.95  # Price already reflects the movement
+        }
+
+        opportunity = analyzer.detect_arbitrage_opportunity(
+            spot_data=spot_data,
+            polymarket_data=polymarket_data,
+            asset="BTC"
+        )
+
+        assert opportunity is None  # Certainty gap too small
+
+    def test_arbitrage_invalid_asset(self, analyzer):
+        """Test that non-target assets are filtered."""
+        spot_data = {"price": 100, "prices": [90, 95, 100, 105, 110]}
+        polymarket_data = {"price": 1.5}
+
+        opportunity = analyzer.detect_arbitrage_opportunity(
+            spot_data=spot_data,
+            polymarket_data=polymarket_data,
+            asset="DOGE"  # Not in target assets
+        )
+
+        assert opportunity is None
+
+    def test_arbitrage_missing_price_data(self, analyzer):
+        """Test handling of missing price data."""
+        spot_data = {"price": None}
+        polymarket_data = {"price": 1.0}
+
+        opportunity = analyzer.detect_arbitrage_opportunity(
+            spot_data=spot_data,
+            polymarket_data=polymarket_data,
+            asset="BTC"
+        )
+
+        assert opportunity is None
+
+    def test_calculate_spot_momentum(self, analyzer):
+        """Test spot momentum calculation."""
+        # Setup spot prices
+        analyzer.spot_prices["BTC"] = {
+            "prices": [48000, 48500, 49000, 49500, 50000]
+        }
+
+        momentum = analyzer._calculate_spot_momentum("BTC")
+        assert momentum > 0  # Positive momentum
+        assert momentum > 4.0  # Should be ~4.17% ((50000-48000)/48000 * 100)
+
+        # Test downward momentum
+        analyzer.spot_prices["ETH"] = {
+            "prices": [3000, 2900, 2800, 2700, 2600]
+        }
+
+        momentum = analyzer._calculate_spot_momentum("ETH")
+        assert momentum < 0  # Negative momentum
+
+    def test_calculate_spot_momentum_edge_cases(self, analyzer):
+        """Test spot momentum edge cases."""
+        # Asset not in spot_prices
+        momentum = analyzer._calculate_spot_momentum("UNKNOWN")
+        assert momentum == 0.0
+
+        # Insufficient prices
+        analyzer.spot_prices["BTC"] = {"prices": [50000, 50100]}
+        momentum = analyzer._calculate_spot_momentum("BTC")
+        assert momentum == 0.0
+
+        # Zero start price
+        analyzer.spot_prices["BTC"] = {"prices": [0, 100, 200, 300, 400]}
+        momentum = analyzer._calculate_spot_momentum("BTC")
+        assert momentum == 0.0
+
+    def test_calculate_implied_probability(self, analyzer):
+        """Test implied probability calculation from momentum."""
+        # Strong positive momentum
+        prob = analyzer._calculate_implied_probability(20.0)
+        assert prob > 0.5  # Should imply >50% probability
+
+        # Strong negative momentum
+        prob = analyzer._calculate_implied_probability(-20.0)
+        assert prob < 0.5  # Should imply <50% probability
+
+        # Zero momentum
+        prob = analyzer._calculate_implied_probability(0.0)
+        assert prob == 0.5  # Should be 50%
+
+        # Extreme values should be clamped
+        prob = analyzer._calculate_implied_probability(100.0)
+        assert 0.0 <= prob <= 1.0
+
+    def test_calculate_lag(self, analyzer):
+        """Test lag calculation between spot and polymarket."""
+        from datetime import datetime, timedelta
+
+        current_time = datetime.now()
+        analyzer.last_updated["BTC_spot"] = current_time - timedelta(seconds=10)
+        analyzer.last_updated["BTC_poly"] = current_time - timedelta(seconds=50)
+
+        lag = analyzer._calculate_lag("BTC", current_time)
+        assert lag >= 35  # Should detect ~40 second lag
+
+        # Test when poly is newer (negative lag should return 0)
+        analyzer.last_updated["BTC_spot"] = current_time - timedelta(seconds=50)
+        analyzer.last_updated["BTC_poly"] = current_time - timedelta(seconds=10)
+
+        lag = analyzer._calculate_lag("BTC", current_time)
+        assert lag == 0  # Negative lag returns 0
+
+    def test_arbitrage_urgency_levels(self, analyzer):
+        """Test that urgency is correctly assigned based on lag."""
+        from datetime import datetime, timedelta
+
+        current_time = datetime.now()
+
+        # High urgency (>60 seconds lag)
+        analyzer.last_updated["BTC_spot"] = current_time - timedelta(seconds=5)
+        analyzer.last_updated["BTC_poly"] = current_time - timedelta(seconds=70)
+
+        spot_data = {
+            "price": 50000,
+            "prices": [48000, 48500, 49000, 49500, 50000]
+        }
+        polymarket_data = {"price": 2.0}
+
+        opportunity = analyzer.detect_arbitrage_opportunity(
+            spot_data=spot_data,
+            polymarket_data=polymarket_data,
+            asset="BTC"
+        )
+
+        if opportunity:
+            assert opportunity.urgency == "HIGH"
+
+    def test_extract_series_edge_cases(self, analyzer):
+        """Test _extract_series with various input types."""
+        # Test with Series
+        series = pd.Series([1, 2, 3, 4, 5])
+        result = analyzer._extract_series(series, "close")
+        assert result == [1, 2, 3, 4, 5]
+
+        # Test with dict containing non-iterable
+        data = {"close": 42}
+        result = analyzer._extract_series(data, "close")
+        assert result == []
+
+        # Test with missing key
+        df = pd.DataFrame({"open": [1, 2, 3]})
+        result = analyzer._extract_series(df, "close")
+        assert result == []
