@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from src.lib.exceptions import RiskLimitExceeded, TradingError
 # Simple logger fallback
@@ -378,7 +378,7 @@ class ScalableRiskManager:
             return f"Daily loss limit exceeded: ${abs(self.daily_metrics.total_pnl):.2f}"
 
         # Check consecutive losses
-        if self.daily_metrics.consecutive_losses >= 5:
+        if self.daily_metrics.consecutive_losses >= 3:
             return f"Consecutive losses: {self.daily_metrics.consecutive_losses}"
 
         # Check maximum drawdown
@@ -387,11 +387,11 @@ class ScalableRiskManager:
 
         # Check win rate
         if self.daily_metrics.total_trades >= 20 and self.get_daily_win_rate() < self.params["win_rate_threshold"]:
-            return f"Win rate too low: {self.get_dailywin_rate():.1%}"
+            return f"Win rate too low: {self.get_daily_win_rate():.1%}"
 
         return None
 
-    def get_risk_summary(self) -> Dict[str, any]:
+    def get_risk_summary(self) -> Dict[str, Any]:
         """Get comprehensive risk summary."""
         return {
             "tier": self.tier,

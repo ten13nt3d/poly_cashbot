@@ -1,76 +1,38 @@
 # Documentation Index
 # XRP Polymarket Cash Bot
 
-**Last Updated**: 2026-01-04
+**Last Updated**: 2026-01-06
 
-## Start Here
+## Start Here (Orden recomendado)
 
-New to the project? Read these in order:
+1. **[README.md](../README.md)** - Quick start and setup overview
+2. **[PROJECT_SUMMARY.md](../PROJECT_SUMMARY.md)** - Project snapshot and structure
+3. **[../memory/constitution.md](../memory/constitution.md)** - Project law (mandatory)
+4. **[prd.md](./prd.md)** - Product requirements
+5. **[technical-specification.md](./technical-specification.md)** - Architecture and stack
+6. **[mvp-definition.md](./mvp-definition.md)** - MVP scope and success criteria
+7. **[roadmap.md](./roadmap.md)** - Timeline and milestones
+8. **[TASKS.md](./TASKS.md)** - Task breakdown and dependencies
 
-1. **[PROJECT_SUMMARY.md](../PROJECT_SUMMARY.md)** - Overview of everything
-2. **[README.md](../README.md)** - Quick start guide
-3. **[AGENTS.md](../AGENTS.md)** - For AI coding assistants
+## Docs en /docs (ordenados por objetivo)
 
-## Core Documentation
+### Planning & Scope
+- **[prd.md](./prd.md)** - Product requirements, user stories, KPIs
+- **[mvp-definition.md](./mvp-definition.md)** - MVP scope, targets, success criteria
+- **[roadmap.md](./roadmap.md)** - Phases, milestones, timelines
+- **[TASKS.md](./TASKS.md)** - Detailed tasks, dependencies, acceptance criteria
 
-### Requirements & Planning
+### Technical & Environment
+- **[technical-specification.md](./technical-specification.md)** - System architecture and APIs
+- **[environments.md](./environments.md)** - Local/VPS setup, costs, tradeoffs
 
-- **[prd.md](./prd.md)** - Product Requirements Document
-  - Complete feature requirements
-  - User stories and success metrics
-  - Risk assessment and dependencies
+### Execution Notes
+- **[NEXT_SESSION.md](./NEXT_SESSION.md)** - Next-session plan and open items
 
-- **[mvp-definition.md](./mvp-definition.md)** - MVP Scope
-  - What's in/out of scope for MVP
-  - >70% win rate target
-  - Capital scalability ($10-$1000+)
-  - 8-week development timeline
+## Governance (fuera de /docs)
 
-- **[roadmap.md](./roadmap.md)** - Development Roadmap
-  - 5 development phases
-  - Milestones and deliverables
-  - Post-MVP expansion plans
-
-### Technical Documentation
-
-- **[technical-specification.md](./technical-specification.md)** - Architecture
-  - Complete system architecture
-  - Technology stack (Python 3.11+, PostgreSQL, Redis)
-  - Data models and API specs
-  - Security and performance requirements
-
-- **[environments.md](./environments.md)** - Environments
-  - Local vs VPS setup
-  - Cost expectations
-  - Deployment options and tradeoffs
-
-- **[TASKS.md](./TASKS.md)** - Implementation Tasks
-  - 75+ detailed tasks
-  - Dependencies and priorities
-  - Effort estimates
-  - Progress tracking
-
-### Project Governance
-
-- **[../memory/constitution.md](../memory/constitution.md)** - Project Law
-  - Architectural principles
-  - Code quality standards
-  - Testing requirements
-  - Security and deployment rules
-
-## Documentation Statistics
-
-| Document | Size | Purpose |
-|----------|------|---------|
-| prd.md | 22.7 KB | Product requirements |
-| technical-specification.md | 36.6 KB | Technical architecture |
-| mvp-definition.md | 28.6 KB | MVP scope and success criteria |
-| roadmap.md | 12.4 KB | Development timeline |
-| environments.md | New | Local vs VPS guidance |
-| TASKS.md | 21.6 KB | Detailed task breakdown |
-| constitution.md | 19.1 KB | Project principles |
-
-**Total**: 142 KB (approx) of comprehensive documentation
+- **[../memory/constitution.md](../memory/constitution.md)** - Architecture, testing, security rules
+- **[../AGENTS.md](../AGENTS.md)** - AI agent workflow and code standards
 
 ## Quick Links
 
@@ -80,18 +42,7 @@ New to the project? Read these in order:
 - [Development Timeline](./roadmap.md#phase-1-foundation-weeks-1-2)
 - [Task List](./TASKS.md#phase-1-foundation-weeks-1-2)
 
-## For AI Agents
-
-Start with [AGENTS.md](../AGENTS.md) for complete guide on:
-- Project structure
-- Coding standards
-- Testing requirements
-- Common tasks
-- Best practices
-
-Then follow the task list in [TASKS.md](./TASKS.md).
-
 ---
 
-**Project Status**: Ready for Development
-**Next Step**: TASK-001 (Project Structure Setup)
+**Project Status**: Active Development
+**Next Step**: Keep TASKS.md aligned with actual code status

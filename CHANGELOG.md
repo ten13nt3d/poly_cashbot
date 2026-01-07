@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Fixed
+- Circuit breaker now triggers after 3 consecutive losses to match the constitution.
+
+### Documentation
+- Updated docs/TASKS.md to reflect current implementation status and next tasks.
 
 ## [0.1.1] - 2026-01-05
 
