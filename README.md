@@ -69,9 +69,12 @@ XRP Polymarket Cash Bot is an autonomous trading system designed for maximum win
 git clone https://github.com/yourusername/poly_cashbot.git
 cd poly_cashbot
 
-# Install dependencies (using Poetry)
+# Install dependencies (using Poetry - recommended)
 pip install poetry
 poetry install
+
+# Alternative: Install with pip (if you don't want to use Poetry)
+# pip install -r requirements.txt
 
 # Set up environment variables
 cp .env.example .env
@@ -160,8 +163,9 @@ poetry run python -m src.bot.main --live
 cashbot-prediction-markets/
 ├── README.md                          # Este archivo
 ├── SETUP.md                           # Guía de instalación
-├── requirements.txt                   # Dependencias PIP
-├── environment.yml                    # Entorno Conda reproducible
+├── pyproject.toml                     # Configuración de Poetry (dependencias)
+├── poetry.lock                        # Versiones bloqueadas de dependencias
+├── requirements.txt                   # Alternativa pip (generado desde Poetry)
 ├── .env.template                      # Template de variables
 ├── .gitignore                         # Archivos ignorados por Git
 │

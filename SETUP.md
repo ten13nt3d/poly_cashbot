@@ -44,9 +44,17 @@ conda activate cashbot
 
 ### 3. Instalar Dependencias
 
+**Opción A: Usando Poetry (Recomendado)**
 ```bash
-# Si usaste environment.yml, ya están instaladas
-# Si no, ejecuta:
+# Instalar Poetry si no lo tienes
+pip install poetry
+
+# Instalar todas las dependencias
+poetry install
+```
+
+**Opción B: Usando pip**
+```bash
 pip install -r requirements.txt
 ```
 
@@ -96,8 +104,9 @@ Se abrirá en `http://localhost:8888`
 
 ```
 cashbot-prediction-markets/
-├── environment.yml              # Dependencias Conda
-├── requirements.txt             # Dependencias PIP
+├── pyproject.toml               # Configuración de Poetry (dependencias)
+├── poetry.lock                  # Versiones bloqueadas de dependencias
+├── requirements.txt             # Alternativa para pip (generado desde Poetry)
 ├── .env.template               # Template de variables
 ├── .gitignore                  # Archivos ignorados
 │
