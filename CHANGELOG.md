@@ -293,10 +293,77 @@ All notable changes to this project will be documented in this file.
 
 **Phase 3 Summary**: 77 tests, 89% average coverage (93% polymarket, 98% price_feed, 80% market_discovery)
 
+#### Phase 4: Bot Main Loop Tests - 41 Tests (Day 8)
+
+- ✅ **test_bot_init.py**: 19 tests for bot initialization
+  - **Capital Configuration**: 3 tests
+    - Default capital ($1000)
+    - Small capital ($10)
+    - Large capital ($10,000)
+  - **Component Initialization**: 8 tests
+    - Arbitrage detector initialization
+    - Whale detector with "XRP_markets" filter
+    - Interval strategy initialization
+    - Risk manager with capital parameter
+    - Database manager initialization
+    - Polymarket client (paper_trading mode)
+    - Price feed service initialization
+    - Market discovery service with dependencies
+  - **State Management**: 5 tests
+    - Paper trading vs live trading mode
+    - Initial state (is_running = False)
+    - Stats initialized to zero (start_time, signals, trades)
+    - Available capital equals total initially
+    - Position ID mapping initialized empty
+  - **Attributes**: 3 tests
+    - All components initialized together
+    - Decimal string handling
+    - All expected attributes exist
+
+- ✅ **test_bot_loop.py**: 13 tests for trading loop operations
+  - **Loop Control**: 1 test
+    - start() calls _main_loop()
+  - **Market Analysis**: 2 tests
+    - Fetches spot and Polymarket data
+    - Detects arbitrage opportunities
+    - Increments signals_generated counter
+  - **Position Management**: 4 tests
+    - Monitors all open positions
+    - Closes positions on exit signal
+    - Updates capital on position close
+    - Increments total_trades counter
+  - **Risk Management**: 2 tests
+    - Stops bot on circuit breaker trigger
+    - Continues when risk checks pass
+  - **Data Fetching**: 2 tests
+    - Uses PriceFeedService for spot data
+    - Uses MarketDiscoveryService for Polymarket data
+  - **Performance**: 1 test
+    - Aggregates metrics from all components
+  - **Method Existence**: 1 test
+    - Whale alerts method exists and callable
+
+- ✅ **test_bot_shutdown.py**: 9 tests for shutdown and cleanup
+  - **Circuit Breaker Shutdown**: 3 tests
+    - Daily loss limit trigger
+    - Consecutive losses trigger (3 losses)
+    - Risk summary accessible
+  - **State Preservation**: 5 tests
+    - Performance summary available after shutdown
+    - Open positions remain accessible
+    - Statistics preserved (signals, trades)
+    - Capital values preserved (total, available)
+    - Position ID mappings preserved
+  - **Graceful Shutdown**: 1 test
+    - Shutdown with multiple open positions
+
+**Phase 4 Summary**: 41 tests for bot main loop (19 init + 13 loop + 9 shutdown)
+
 ### Fixed
 - Fixed indentation errors in analyzer.py (2-space and 6-space to standard 4-space)
 - Fixed line continuation breaks in analyzer.py (multiple locations)
 - Improved trend_strength calculation for better confidence scoring
+- Fixed float/Decimal type mismatch in get_performance_summary() ROI calculation (Day 8)
 - Adjusted confidence weights (alignment 40%, news 30%, volume 10%, trend 10%)
 - Circuit breaker now triggers after 3 consecutive losses to match the constitution
 

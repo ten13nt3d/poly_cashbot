@@ -571,7 +571,7 @@ class CashBot:
             'whale': whale_stats,
             'total_pnl': strategy_metrics.get('total_pnl', 0),
             'win_rate': strategy_metrics.get('win_rate', 0),
-            'roi_pct': float((strategy_metrics.get('total_pnl', 0) / self.total_capital) * 100) 
+            'roi_pct': float((strategy_metrics.get('total_pnl', 0) / float(self.total_capital)) * 100)
         }
 
 
