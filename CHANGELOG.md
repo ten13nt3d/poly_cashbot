@@ -196,6 +196,103 @@ All notable changes to this project will be documented in this file.
 
 **Phase 2 Summary**: 130 tests, 93% average coverage (97% risk, 87% strategy, 96% whale)
 
+#### Phase 3: Services Layer Tests - 89% Average Coverage (Day 8)
+
+- ✅ **test_polymarket_service.py**: 22 tests (0% → 93% coverage)
+  - **Market Operations**: 5 tests
+    - Paper trading initialization
+    - Custom circuit breaker thresholds
+    - Fetch all markets successfully
+    - Fetch specific market by ID
+    - Fetch orderbook with bids/asks
+  - **Trading Operations**: 4 tests
+    - Submit order (paper trading mode)
+    - Submit order (real mode with mocks)
+    - Cancel order (paper trading mode)
+    - Cancel order (real mode with mocks)
+  - **Retry Logic**: 4 tests
+    - Success on first attempt
+    - Success after retryable failures
+    - Retry exhausted after max attempts
+    - Non-retryable exceptions fail immediately
+  - **Circuit Breaker**: 7 tests
+    - Initialization in CLOSED state
+    - Successful calls in CLOSED state
+    - Opens after failure threshold
+    - Fails immediately when OPEN
+    - Transitions to HALF_OPEN after timeout
+    - Closes on success in HALF_OPEN
+    - Resets failure count on success
+  - **Integration**: 2 tests
+    - Client with circuit breaker
+    - Multiple paper trading orders
+
+- ✅ **test_price_feed.py**: 24 tests (20% → 98% coverage)
+  - **Initialization**: 2 tests
+    - Successful Redis initialization
+    - Graceful degradation without Redis
+  - **Cache Operations**: 7 tests
+    - Cache key generation with 5-min bucketing
+    - Cache hit/miss scenarios
+    - Cache operations without Redis
+    - Cache write with TTL
+    - Error handling for cache failures
+  - **API Fetching**: 6 tests
+    - CoinGecko fetch success
+    - CoinGecko unsupported asset error
+    - CoinGecko HTTP error handling
+    - CoinCap fetch success (fallback)
+    - CoinCap unsupported asset error
+    - CoinCap HTTP error handling
+  - **Price Retrieval**: 4 tests
+    - Cache hit (no API call)
+    - Cache miss, CoinGecko success
+    - CoinGecko fails, CoinCap succeeds
+    - All sources fail
+  - **Multi-Asset Prices**: 2 tests
+    - Concurrent multi-asset fetching
+    - Partial failures handled gracefully
+  - **Historical Prices**: 1 test
+    - NotImplementedError raised
+  - **Resource Cleanup**: 2 tests
+    - Close with Redis
+    - Close without Redis
+
+- ✅ **test_market_discovery.py**: 31 tests (0% → 80% coverage)
+  - **Asset Detection**: 10 tests
+    - XRP detection (case-insensitive)
+    - Ripple keyword detection
+    - BTC detection
+    - Bitcoin keyword detection
+    - ETH detection
+    - Ethereum keyword detection
+    - No asset detected for unrelated markets
+    - Priority order: XRP > BTC > ETH
+  - **Time Validation**: 8 tests
+    - Valid time windows (30min, 2hr, 20hr)
+    - Too soon (<15 minutes)
+    - Too far (>24 hours)
+    - Expired markets
+    - Missing end_date
+    - Invalid date format
+  - **Priority Sorting**: 4 tests
+    - XRP markets sorted first
+    - BTC before ETH
+    - None asset sorted last
+    - Multiple same asset preserved
+  - **Market Filtering**: 6 tests
+    - Filter by asset (valid/invalid)
+    - Filter by liquidity (pass/fail)
+    - Filter by time window
+    - Combined filtering with priority sort
+  - **Database Operations**: 1 test
+    - Save markets with upsert pattern
+  - **Discovery Flow**: 2 tests
+    - Full discovery flow (fetch, filter, save)
+    - No results when all filtered out
+
+**Phase 3 Summary**: 77 tests, 89% average coverage (93% polymarket, 98% price_feed, 80% market_discovery)
+
 ### Fixed
 - Fixed indentation errors in analyzer.py (2-space and 6-space to standard 4-space)
 - Fixed line continuation breaks in analyzer.py (multiple locations)
