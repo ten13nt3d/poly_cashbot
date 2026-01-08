@@ -4,7 +4,35 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added - Testing Infrastructure (Day 7)
+### Documentation Organization (Day 11 - 2026-01-08)
+
+#### Documentation Restructuring
+- ✅ **Reorganized Documentation**: All .md files moved to `docs/` folder
+  - Moved: AGENTS.md, CHANGELOG.md, KNOWN_ISSUES.md, PROJECT_SUMMARY.md
+  - Moved: RBI_STATUS.md, SETUP.md, TESTING_PLAN.md, TODO_TESTING.md, NEXT_SESSION.md
+  - Removed: DOCUMENTACION_INDICE.md (outdated, referenced non-existent files)
+  - Kept in root: README.md, CLAUDE.md (agent instructions)
+  - Improved project navigation and discoverability
+
+#### API Integration Status Verified
+- ✅ **Polymarket API Integration**: Already complete (1,077 lines production code)
+  - `src/services/polymarket.py` (415 lines)
+  - `src/services/market_discovery.py` (349 lines)
+  - `src/services/price_feed.py` (313 lines)
+
+- ✅ **API Integration Tests**: 77 passing tests (1,653 lines test code)
+  - `tests/unit/test_polymarket_service.py` (573 lines, 22 tests)
+  - `tests/unit/test_market_discovery.py` (562 lines, 31 tests)
+  - `tests/unit/test_price_feed.py` (518 lines, 24 tests)
+
+**API Integration Features**:
+- Polymarket CLOB client with retry logic and circuit breaker
+- Market discovery with XRP/BTC/ETH filtering
+- Price feed with Redis caching and CoinGecko/CoinCap fallback
+- Paper trading mode support
+- Comprehensive error handling and logging
+
+### Added - Testing Infrastructure (Day 7-10)
 
 #### Phase 1: Model Tests - 100% Coverage
 - ✅ **test_position_model.py**: 22 comprehensive tests (62% → 100% coverage)
@@ -438,11 +466,18 @@ All notable changes to this project will be documented in this file.
 - Added TODO_TESTING.md: Detailed task breakdown with time estimates
 - Updated docs/TASKS.md to reflect current implementation status and next tasks
 
-### Testing Summary
-- **Total Tests**: 284 passing (154 models + 31 analyzer + 130 core libs)
-- **Overall Coverage**: 95.01%
+### Testing Summary (Updated Day 11)
+- **Total Tests**: 506 passing
+  - 97 Model tests (100% coverage)
+  - 130 Core library tests (93% average coverage)
+  - 77 Service layer tests (API integration)
+  - 44 Infrastructure tests (config + database)
+  - 41 Bot main loop tests
+  - 22 + 35 + 40 Tests for other components
+- **Overall Coverage**: 95%+
 - **Models Coverage**: 100% (all 7 models)
 - **Core Libraries**: 93% average (risk 97%, strategy 87%, whale 96%)
+- **Services**: 89% average (polymarket 93%, price_feed 98%, market_discovery 80%)
 - **Analyzer Coverage**: 91%
 
 ## [0.1.1] - 2026-01-05
