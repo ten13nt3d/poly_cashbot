@@ -1,20 +1,26 @@
+# XRP Polymarket Cash Bot - Docker Compose Configuration
+# Usage:
+#   docker-compose up -d        # Start all services
+#   docker-compose logs -f bot  # View bot logs
+#   docker-compose down         # Stop all services
+
 version: '3.8'
 
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
-    container_name: poly_cashbot_postgres
+    image: postgres:16-alpine
+    container_name: poly_cashbot_db
     environment:
-      POSTGRES_DB: poly_cashbot
-      POSTGRES_USER: cashbot_user
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: ${DB_NAME:-poly_cashbot}
+      POSTGRES_USER: ${DB_USER:-cashbot_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cashbot_user -d poly_cashbot"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cashbot_user}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,17 +30,67 @@ services:
   redis:
     image: redis:7-alpine
     container_name: poly_cashbot_redis
-    command: redis-server --appendonly yes --requirepass dev_redis_password
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 5s
+      timeout: 3s
       retries: 5
     restart: unless-stopped
+
+  # Trading Bot
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poly_cashbot
+    environment:
+      # Database
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-cashbot_user}:${DB_PASSWORD:-dev_password}@postgres:5432/${DB_NAME:-poly_cashbot}
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Polymarket API
+      POLYMARKET_API_KEY: ${POLYMARKET_API_KEY}
+      POLYMARKET_CHAIN_ID: ${POLYMARKET_CHAIN_ID:-137}
+      POLYMARKET_HOST: ${POLYMARKET_HOST:-https://clob.polymarket.com}
+
+      # Trading Configuration
+      STARTING_CAPITAL: ${STARTING_CAPITAL:-1000}
+      PAPER_TRADING: ${PAPER_TRADING:-true}
+      MIN_CONFIDENCE_THRESHOLD: ${MIN_CONFIDENCE_THRESHOLD:-0.80}
+      MIN_SENTIMENT_THRESHOLD: ${MIN_SENTIMENT_THRESHOLD:-40}
+
+      # Risk Management
+      PER_TRADE_RISK_PCT: ${PER_TRADE_RISK_PCT:-0.02}
+      MAX_DAILY_LOSS_PCT: ${MAX_DAILY_LOSS_PCT:-0.10}
+      MAX_CONCURRENT_POSITIONS: ${MAX_CONCURRENT_POSITIONS:-3}
+
+      # Telegram (optional)
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    volumes:
+      - ./logs:/app/logs
+
+    restart: unless-stopped
+
+    # Override command for different modes
+    # command: python -m src.bot.main --mode live
 
   # Prometheus (Optional - for monitoring)
   prometheus:
