@@ -359,6 +359,72 @@ All notable changes to this project will be documented in this file.
 
 **Phase 4 Summary**: 41 tests for bot main loop (19 init + 13 loop + 9 shutdown)
 
+#### Phase 5: Infrastructure Tests - 44 Tests (Day 10)
+
+- ✅ **test_config.py**: 24 tests for configuration system
+  - **Default Values**: 8 tests
+    - Redis URL default (redis://localhost:6379)
+    - Polymarket chain ID default (137 mainnet)
+    - Polymarket host default (https://clob.polymarket.com)
+    - Risk management defaults (2% per trade, 10% daily loss, 5 positions, $5 min)
+    - Trading strategy defaults (80% confidence, 40 sentiment, $10k liquidity, XRP priority)
+    - Logging defaults (INFO level, json format)
+    - Paper trading default (False)
+    - Optional API keys default to None
+  - **Field Validation**: 5 tests
+    - Database URL auto-adds asyncpg driver
+    - Database URL preserves existing asyncpg
+    - Starting capital minimum validation ($10)
+    - Starting capital maximum validation ($1M)
+    - Starting capital valid range acceptance
+  - **Type Conversion**: 4 tests
+    - Decimal fields from string (starting_capital, per_trade_risk_pct, etc.)
+    - Integer fields from string (chain_id, max_concurrent_positions)
+    - Boolean True from string ("true")
+    - Boolean False from string ("false")
+  - **Required Fields**: 4 tests
+    - database_url required
+    - polymarket_api_key required
+    - starting_capital required
+    - telegram_bot_token required
+  - **Range Validation**: 3 tests
+    - per_trade_risk_pct range (0 to 0.20)
+    - min_confidence_threshold range (0.50 to 0.99)
+    - max_concurrent_positions range (1 to 20)
+
+- ✅ **test_database.py**: 20 tests for database manager
+  - **Initialization**: 4 tests
+    - Default settings
+    - Custom settings (echo, pool_size, max_overflow)
+    - NullPool for testing
+    - AsyncAdaptedQueuePool for production
+  - **Engine Property**: 2 tests
+    - Lazy creation on first access
+    - Singleton pattern (same instance returned)
+  - **Session Maker Property**: 3 tests
+    - Lazy creation on first access
+    - Singleton pattern
+    - Configuration (expire_on_commit=False, autoflush=False)
+  - **Session Context Manager**: 2 tests
+    - Commits transaction on success
+    - Rolls back transaction on error
+  - **Table Operations**: 2 tests
+    - create_all_tables creates database schema
+    - drop_all_tables drops all tables
+  - **Health Check**: 2 tests
+    - Returns True when database accessible
+    - Returns False when database unavailable
+  - **Close Method**: 2 tests
+    - Disposes engine and resets state
+    - Handles case when engine is None
+  - **Dependency Injection**: 1 test
+    - get_session yields session from global db_manager
+  - **Convenience Functions**: 2 tests
+    - init_database calls health_check
+    - shutdown_database calls close
+
+**Phase 5 Summary**: 44 tests for infrastructure (24 config + 20 database)
+
 ### Fixed
 - Fixed indentation errors in analyzer.py (2-space and 6-space to standard 4-space)
 - Fixed line continuation breaks in analyzer.py (multiple locations)

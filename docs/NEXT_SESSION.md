@@ -1,260 +1,230 @@
-# Next Session Plan - Day 6
-**Date**: 2026-01-06
-**Phase**: Phase 1 (Foundation) - Week 2, Day 6
-**Status**: 60% complete (Day 5 of 10 completed)
+# Next Session Plan - Day 11
+
+## Session Summary (Day 10)
+
+### Work Completed ✅
+
+**Phase 5: Infrastructure Tests** - COMPLETE
+- 44 tests written for configuration and database management
+- All tests passing reliably
+- 95% overall coverage maintained
+
+**Test Breakdown:**
+
+1. **test_config.py** - 24 tests for configuration system
+   - Default values (8 tests)
+   - Field validation (5 tests)
+   - Type conversion (4 tests)
+   - Required fields (4 tests)
+   - Range validation (3 tests)
+
+2. **test_database.py** - 20 tests for database manager
+   - Initialization (4 tests)
+   - Engine property (2 tests)
+   - Session maker property (3 tests)
+   - Session context manager (2 tests)
+   - Table operations (2 tests)
+   - Health check (2 tests)
+   - Close method (2 tests)
+   - Dependency injection (1 test)
+   - Convenience functions (2 tests)
+
+**Total Progress:**
+- 455 tests passing (385 main + 26 database models + 44 infrastructure)
+- 95% overall coverage maintained
+- All infrastructure components tested
+
+### Git Commits To Create
+
+Next session should create commits for:
+1. Phase 5 infrastructure tests (2 new test files)
+2. Updated CHANGELOG.md
+3. Updated NEXT_SESSION.md
 
 ---
 
-## ✅ Completed (Day 5 - 2026-01-05)
+## Next Session Tasks
 
-### Database Infrastructure
-- ✅ Created `src/database.py` with async session manager (180 lines)
-  - AsyncAdaptedQueuePool for connection pooling
-  - Context manager for automatic commit/rollback
-  - Health checks and graceful shutdown
-  - FastAPI dependency injection support
+### Immediate Actions
 
-### Alembic Migration System
-- ✅ Initialized Alembic with async PostgreSQL support
-- ✅ Generated initial migration for all 6 models
-- ✅ Applied migrations to both dev and test databases
-- ✅ Verified 7 tables and 18 indexes created
-- ✅ Tested downgrade/upgrade cycles successfully
+1. **Create git commits for Phase 5** ⚠️
+   ```bash
+   git add tests/unit/test_config.py tests/unit/test_database.py
+   git add CHANGELOG.md NEXT_SESSION.md
+   git commit -m "test(infrastructure): add comprehensive infrastructure tests (Phase 5)
 
-### Test Infrastructure
-- ✅ Created `tests/conftest.py` with comprehensive fixtures (210 lines)
-- ✅ Created `tests/helpers.py` with test utilities (80 lines)
-- ✅ Created package init files for tests
+- Add 24 config tests (test_config.py) covering defaults, validation, type conversion, and required fields
+- Add 20 database tests (test_database.py) covering initialization, session management, health checks, and cleanup
+- All tests isolated from project .env file using pytest fixtures
+- 429 main tests + 26 model tests = 455 total tests passing
 
-### Model Unit Tests
-- ✅ Created `tests/unit/test_models.py` with 26 passing tests (520 lines)
-  - Market model: 6 tests (100% coverage)
-  - Order model: 5 tests (98% coverage)
-  - Trade model: 3 tests (97% coverage)
-  - Position model: 4 tests (80% coverage)
-  - SentimentScore model: 5 tests (100% coverage)
-  - WhaleAlert model: 3 tests (100% coverage)
+Phase 5 complete: 44 tests, 95% overall coverage maintained"
+   ```
 
-### Documentation
-- ✅ Updated CHANGELOG.md with comprehensive Day 5 summary
-- ✅ Updated NEXT_SESSION.md for Day 6
+2. **Push to remote**
+   ```bash
+   git push origin main
+   ```
 
-### Test Results
-- **Tests**: 26 passed, 1 skipped (timezone issue)
-- **Coverage**: 72% overall, 90%+ on models
-- **Execution Time**: ~10 seconds
+3. **Run full test suite to verify**
+   ```bash
+   # Run main tests
+   poetry run pytest tests/unit/ --ignore=tests/unit/test_models.py -q
 
----
+   # Run database model tests
+   poetry run pytest tests/unit/test_models.py -q
+   ```
 
-## 🎯 Day 6 Tasks (Polymarket API Integration)
+### Next Priority: Phase 6 - Sentiment Analyzer Tests
 
-### Estimated Time: 6-7 hours
+**Objective**: Increase sentiment analyzer coverage from 24% to 90%+
 
-### Task 1: Create Polymarket API Client (2.5 hours)
-**File**: `src/services/polymarket.py`
+**File**: `src/lib/sentiment/analyzer.py` (283 lines)
+**Current Coverage**: 26 lines tested, 24% coverage
+**Target Coverage**: 90%+ (255+ lines tested)
 
-**Requirements**:
-- Use `py-clob-client` library (already installed)
-- Create `PolymarketClient` class with async support
-- Implement methods:
-  - `get_markets()` - Fetch all markets
-  - `get_market(market_id)` - Fetch specific market
-  - `get_orderbook(market_id)` - Get orderbook data
-  - `submit_order(order)` - Place order (paper trading mode)
-  - `cancel_order(order_id)` - Cancel order
-- Add retry logic with exponential backoff
-- Add circuit breaker for API failures
-- Structured logging for all API calls
+#### Task 6.1: TemporalArbitrageDetector Tests (~3-4 hours)
 
-**Testing**:
-- Create `tests/unit/test_polymarket_client.py`
-- Mock API responses using `pytest-mock`
-- Test error handling and retries
-- Test circuit breaker logic
+**Create**: `tests/unit/test_sentiment_analyzer.py`
 
-**Acceptance Criteria**:
-- All methods properly async
-- Retry logic tested (3 retries, exponential backoff)
-- Circuit breaker triggers after 5 consecutive failures
-- All API calls logged with structured logging
-- Unit tests with >85% coverage
+**Subtasks:**
 
----
+1. **Initialization Tests** (15 min)
+   - Test ASSETS, SUPPORTED_ASSETS, KEYWORDS setup
+   - Test confidence weights defaults
+   - Test news source configuration
 
-### Task 2: Create Price Feed Service (1.5 hours)
-**File**: `src/services/price_feed.py`
+2. **Alignment Score Tests** (30 min)
+   - Test perfect alignment (0 spread)
+   - Test misalignment (5% spread)
+   - Test small spreads (1%, 2%)
+   - Test large spreads (10%+)
+   - Test edge cases (None values, zero prices)
 
-**Requirements**:
-- Create `PriceFeedService` class
-- Integrate with CoinGecko API (free tier)
-- Implement methods:
-  - `get_price(asset)` - Get current price for XRP/BTC/ETH
-  - `get_historical_prices(asset, hours)` - Get price history
-- Cache prices in Redis (5-minute TTL)
-- Fallback to CoinCap API if CoinGecko fails
+3. **News Fetching Tests** (30 min)
+   - Test successful news fetch
+   - Test NewsAPI fallback to GNews
+   - Test no news sources available
+   - Test API errors (429, 500, timeout)
+   - Test empty news results
 
-**Testing**:
-- Create `tests/unit/test_price_feed.py`
-- Mock CoinGecko/CoinCap responses
-- Test caching logic
-- Test fallback mechanism
+4. **News Sentiment Scoring Tests** (45 min)
+   - Test bullish keywords detection
+   - Test bearish keywords detection
+   - Test neutral news (no keywords)
+   - Test keyword counting and weighting
+   - Test different keyword categories (strong, moderate, weak)
 
-**Acceptance Criteria**:
-- Redis caching working
-- Fallback tested
-- Unit tests with >80% coverage
+5. **Volume Analysis Tests** (30 min)
+   - Test normal volume (no spike)
+   - Test volume spike (2x, 3x, 5x average)
+   - Test insufficient history (<10 samples)
+   - Test edge cases (zero volume, None values)
+
+6. **Trend Strength Tests** (30 min)
+   - Test uptrend strength
+   - Test downtrend strength
+   - Test sideways trend (low strength)
+   - Test insufficient data for trend
+   - Test slope calculations
+
+7. **Arbitrage Detection Tests** (45 min)
+   - Test valid arbitrage opportunity (all signals bullish)
+   - Test no opportunity (conflicting signals)
+   - Test high confidence detection (>90%)
+   - Test low confidence detection (<70%)
+   - Test different urgency levels (HIGH, MEDIUM, LOW)
+   - Test direction (BUY vs SELL)
+   - Test polymarket_lag calculation
+   - Test confidence score aggregation
+
+**Target**: 85%+ coverage for analyzer.py
 
 ---
 
-### Task 3: Create Market Discovery Service (2 hours)
-**File**: `src/services/market_discovery.py`
+## Testing Metrics Progress
 
-**Requirements**:
-- Create `MarketDiscoveryService` class
-- Implement `discover_markets()` method:
-  - Fetch all active markets from Polymarket
-  - Filter by related asset (XRP > BTC > ETH priority)
-  - Filter by minimum liquidity ($10,000)
-  - Filter by time to expiration (>15 minutes, <24 hours)
-  - Save filtered markets to database
-- Implement `update_market_prices()` method:
-  - Update yes_price, no_price, volume_24h, liquidity
-  - Use database session from src/database.py
-
-**Testing**:
-- Create `tests/integration/test_market_discovery.py`
-- Use real database (test database)
-- Mock Polymarket API responses
-- Test market filtering logic
-
-**Acceptance Criteria**:
-- Markets saved to database correctly
-- Filtering logic works (XRP priority, liquidity, time)
-- Database session management correct
-- Integration tests pass
+| Phase | Module | Tests | Coverage | Status |
+|-------|--------|-------|----------|--------|
+| **Phase 1** | Models (7 files) | 97 | 100% | ✅ Complete |
+| **Phase 2** | Core Libraries (3 files) | 130 | 93% avg | ✅ Complete |
+| **Phase 3** | Services (3 files) | 77 | 89% avg | ✅ Complete |
+| **Phase 4** | Bot Main Loop (3 files) | 41 | ~70% | ✅ Complete |
+| **Phase 5** | Infrastructure (2 files) | 44 | N/A | ✅ Complete |
+| Phase 6 | Sentiment Analyzer | 0 | 24% | ⏳ Pending |
+| **Total** | - | **455** | **~95%** | 🚧 In Progress |
 
 ---
 
-### Task 4: Error Handling & Logging (45 minutes)
-
-**Requirements**:
-- Add structured logging to all services
-- Use `structlog` for JSON logging
-- Log all API calls with timing
-- Log all database operations
-- Add error context (market_id, order_id, etc.)
-
-**Testing**:
-- Verify logs are in JSON format
-- Verify all errors are logged with context
-
-**Acceptance Criteria**:
-- All logs in JSON format
-- Error context always included
-- Timing information for API calls
-
----
-
-### Task 5: Integration Tests (30 minutes)
-
-**Requirements**:
-- Create `tests/integration/test_polymarket_integration.py`
-- Test end-to-end flow:
-  1. Discover markets
-  2. Filter markets
-  3. Save to database
-  4. Retrieve from database
-- Use real database (test database)
-- Mock external APIs
-
-**Acceptance Criteria**:
-- Integration tests pass
-- Test database properly cleaned after tests
-- All mocked APIs verified
-
----
-
-## 📋 Pre-Session Checklist
-
-Before starting Day 6:
-- [ ] Docker services are running (`docker-compose ps`)
-- [ ] Virtual environment activated (`poetry shell`)
-- [ ] All Day 5 tests passing (`poetry run pytest tests/unit/test_models.py`)
-- [ ] Database migrations applied (`poetry run alembic current`)
-
----
-
-## 🔧 Commands Reference
+## Quick Reference Commands
 
 ```bash
-# Start Docker services
-docker-compose up -d
+# Run all tests (2 groups)
+poetry run pytest tests/unit/ --ignore=tests/unit/test_models.py -q  # 429 tests
+poetry run pytest tests/unit/test_models.py -q  # 26 tests
 
-# Run tests
-poetry run pytest tests/unit/ -v
-poetry run pytest tests/integration/ -v --cov=src
+# Run Phase 5 tests only
+poetry run pytest tests/unit/test_config.py tests/unit/test_database.py -v
 
-# Check coverage
+# Run all tests with coverage
+poetry run pytest --cov=src --cov-report=term-missing
+
+# Generate HTML coverage report
 poetry run pytest --cov=src --cov-report=html
+open htmlcov/index.html  # View in browser
 
-# Run specific test file
-poetry run pytest tests/unit/test_polymarket_client.py -v
-
-# Database operations
-poetry run alembic current
-poetry run alembic upgrade head
-
-# Check code quality
-poetry run black src/ tests/
-poetry run mypy src/
-poetry run ruff check src/
+# Check sentiment analyzer coverage specifically
+poetry run pytest --cov=src.lib.sentiment.analyzer --cov-report=term-missing
 ```
 
 ---
 
-## 📦 New Files to Create (Day 6)
+## Session Goals for Day 11
 
-1. `src/services/polymarket.py` (~200 lines)
-2. `src/services/price_feed.py` (~150 lines)
-3. `src/services/market_discovery.py` (~180 lines)
-4. `tests/unit/test_polymarket_client.py` (~150 lines)
-5. `tests/unit/test_price_feed.py` (~100 lines)
-6. `tests/integration/test_market_discovery.py` (~120 lines)
+**Primary Goal**: Create git commit for Phase 5 and push
+- Commit Phase 5 test files
+- Push to remote
+- Update documentation
 
-**Total**: ~900 lines of code
+**Main Goal**: Begin Phase 6 (Sentiment Analyzer tests)
+- Create test_sentiment_analyzer.py
+- Test alignment scoring
+- Test news fetching and sentiment
+- Test arbitrage detection
+- Target 85%+ coverage
 
----
-
-## 🎯 Success Criteria for Day 6
-
-- [ ] Polymarket client can fetch markets
-- [ ] Price feed service working with Redis caching
-- [ ] Market discovery saves filtered markets to database
-- [ ] All unit tests passing (>85% coverage for new code)
-- [ ] Integration tests passing
-- [ ] Structured logging in JSON format
-- [ ] Error handling and retries working
-- [ ] CHANGELOG.md updated with Day 6 progress
+**Success Criteria**:
+- Phase 5 committed and pushed ✅
+- All 455 tests passing
+- Sentiment analyzer coverage increased from 24% to 85%+
+- No regression in existing tests
 
 ---
 
-## 🚨 Known Issues to Address
+## Files Modified (Day 10)
 
-From Day 5:
-- Position.age_minutes() timezone handling (low priority)
-- Event loop fixture deprecation warning (pytest-asyncio update needed)
-- Coverage target not met overall (acceptable, models well-tested)
+**New Files:**
+1. `tests/unit/test_config.py` - 24 configuration tests
+2. `tests/unit/test_database.py` - 20 database manager tests
 
----
-
-## 📚 Resources
-
-- **Polymarket API Docs**: https://docs.polymarket.com/
-- **py-clob-client**: https://github.com/Polymarket/py-clob-client
-- **CoinGecko API**: https://www.coingecko.com/en/api/documentation
-- **Redis Caching**: https://redis.io/docs/manual/patterns/
+**Modified Files:**
+1. `CHANGELOG.md` - Added Phase 5 section
+2. `NEXT_SESSION.md` - Updated for Day 11
 
 ---
 
-**Status**: Ready for Day 6 - Polymarket API Integration
-**Next Phase**: Phase 2 (Intelligence) - Sentiment Analysis (Week 3)
+## End of Session Checklist
+
+Before ending the next session:
+- [ ] Create git commit for Phase 5
+- [ ] Push to remote
+- [ ] Create tests/unit/test_sentiment_analyzer.py
+- [ ] Increase sentiment analyzer coverage to 85%+
+- [ ] Update CHANGELOG.md with Phase 6 progress
+- [ ] Run full test suite one final time
+- [ ] Create new NEXT_SESSION.md with updated tasks
+
+---
+
+**Last Updated**: Day 10 - 2026-01-07
+**Next Session**: Day 11 - Commit Phase 5, Start Phase 6 (Sentiment Analyzer)
